@@ -38,7 +38,7 @@ interface Context {
   personality: string;           // Personality description in English
   temperature: number;           // Diversity parameter (0.0-1.0)
   maxTokens: number;            // Maximum response tokens
-  maxHistoryTokens: number;     // Maximum conversation history tokens
+  maxHistoryTokens: number;     // Maximum conversation history tokens (default: 15000 for 16K context)
   expiryDays: number;           // Expiry duration in days
   createdAt: string;            // ISO timestamp
   updatedAt: string;            // ISO timestamp
@@ -70,7 +70,7 @@ interface PersonalityPreset {
   defaultSettings: {             // Default parameter values
     temperature: number;         // Default: 0.7
     maxTokens: number;          // Default: 1000
-    maxHistoryTokens: number;   // Default: 4000
+    maxHistoryTokens: number;   // Default: 15000 (16K context - 1K overhead)
     expiryDays: number;         // Default: 7
   };
   createdAt: string;            // ISO timestamp
@@ -94,7 +94,7 @@ const DEFAULT_PERSONALITY_PRESETS = {
     defaultSettings: {
       temperature: 0.6,
       maxTokens: 1200,
-      maxHistoryTokens: 5000,
+      maxHistoryTokens: 15000,
       expiryDays: 14
     }
   },
@@ -107,7 +107,7 @@ const DEFAULT_PERSONALITY_PRESETS = {
     defaultSettings: {
       temperature: 0.5,
       maxTokens: 1000,
-      maxHistoryTokens: 4000,
+      maxHistoryTokens: 15000,
       expiryDays: 7
     }
   },
@@ -120,7 +120,7 @@ const DEFAULT_PERSONALITY_PRESETS = {
     defaultSettings: {
       temperature: 0.8,
       maxTokens: 1500,
-      maxHistoryTokens: 6000,
+      maxHistoryTokens: 15000,
       expiryDays: 10
     }
   },
@@ -133,7 +133,7 @@ const DEFAULT_PERSONALITY_PRESETS = {
     defaultSettings: {
       temperature: 0.7,
       maxTokens: 1000,
-      maxHistoryTokens: 4000,
+      maxHistoryTokens: 15000,
       expiryDays: 7
     }
   }
@@ -157,7 +157,7 @@ Input: {
   personality?: string;          // Custom personality description
   temperature?: number;          // Default: 0.7
   maxTokens?: number;           // Default: 1000
-  maxHistoryTokens?: number;    // Default: 4000
+  maxHistoryTokens?: number;    // Default: 15000 (16K context - 1K overhead)
   expiryDays?: number;          // Default: 7
   
   // For create_from_preset operations
@@ -200,7 +200,7 @@ Input: {
   defaultSettings?: {           // Default parameter values
     temperature?: number;       // Default: 0.7
     maxTokens?: number;        // Default: 1000
-    maxHistoryTokens?: number; // Default: 4000
+    maxHistoryTokens?: number; // Default: 15000 (16K context - 1K overhead)
     expiryDays?: number;       // Default: 7
   };
   metadata?: Record<string, any>; // Additional metadata
@@ -329,7 +329,7 @@ CREATE TABLE contexts (
   personality TEXT NOT NULL,
   temperature REAL DEFAULT 0.7,
   max_tokens INTEGER DEFAULT 1000,
-  max_history_tokens INTEGER DEFAULT 4000,
+  max_history_tokens INTEGER DEFAULT 15000,
   expiry_days INTEGER DEFAULT 7,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -351,7 +351,7 @@ CREATE TABLE personality_presets (
   default_personality TEXT NOT NULL,
   default_temperature REAL DEFAULT 0.7,
   default_max_tokens INTEGER DEFAULT 1000,
-  default_max_history_tokens INTEGER DEFAULT 4000,
+  default_max_history_tokens INTEGER DEFAULT 15000,
   default_expiry_days INTEGER DEFAULT 7,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -436,6 +436,21 @@ src/
 - **Professional Boundaries**: Maintain appropriate response patterns
 
 ## Token Management Strategy
+
+### Context Window Sizing
+**Default Configuration**: The system is configured for 16K token context windows with the following guidelines:
+
+1. **Default maxHistoryTokens**: 15,000 tokens (16K - 1K overhead)
+2. **Overhead Allocation**: 1,000 tokens reserved for:
+   - System prompts (200-400 tokens)
+   - Response generation space (400-600 tokens)  
+   - Protocol overhead and safety margin (200-400 tokens)
+
+3. **Custom Context Window Sizing**: 
+   - **For known context limits**: Set `maxHistoryTokens = (your_context_limit - 1000)`
+   - **For 32K models**: Recommended `maxHistoryTokens = 31000`
+   - **For 8K models**: Recommended `maxHistoryTokens = 7000`
+   - **For 4K models**: Recommended `maxHistoryTokens = 3000`
 
 ### History Management
 1. **Soft Limit Warning**: At 80% of `maxHistoryTokens`
