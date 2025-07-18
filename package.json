@@ -1,7 +1,7 @@
 {
   "name": "@mako10k/mcp-llm-generator",
   "version": "1.0.0",
-  "description": "CLI tool for MCP server LLM generation with template management using TypeScript SDK",
+  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and intelligent template systems. Features 67% token reduction optimization, personality-driven consultants, and associative memory for enhanced AI workflows.",
   "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
