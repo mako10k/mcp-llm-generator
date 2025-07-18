@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Prevent committing context-memory.db (contains sensitive consultant data)
+if git diff --cached --name-only | grep -q 'context-memory\.db\|.*\.db$\|.*\.db-wal$\|.*\.db-shm$'; then
+  echo "❌ ERROR: Database files detected in commit!"
+  echo "🛡️  context-memory.db and related SQLite files must NOT be committed."
+  echo "💡 These files contain 12 consultant personalities and sensitive data."
+  echo ""
+  echo "To fix this:"
+  echo "  git reset HEAD context-memory.db"
+  echo "  git reset HEAD *.db *.db-wal *.db-shm"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Pre-commit check passed: No database files detected"
