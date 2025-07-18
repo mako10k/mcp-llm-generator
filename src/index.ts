@@ -24,6 +24,7 @@ server.registerTool(
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { ContextMemoryIntegration } from "./contextMemory/index.js";
 
 // Template structure definition
 type SampleTemplate = {
@@ -115,6 +116,9 @@ const server = new McpServer({
   name: "mcp-sampler",
   version: "1.0.0"
 });
+
+// Initialize Context Memory System
+const contextMemory = new ContextMemoryIntegration();
 
 // Sample configurations resource
 server.registerResource(
@@ -713,15 +717,132 @@ server.registerTool(
   }
 );
 
+// Context Memory Tools Registration
+server.registerTool(
+  "context-manage",
+  {
+    title: "Context Management",
+    description: "Manage context memory instances with personality-driven chat capabilities",
+    inputSchema: {
+      action: z.enum(['create', 'create_from_preset', 'list', 'get', 'update', 'delete']).describe("Action to perform"),
+      contextId: z.string().optional().describe("Context ID for operations"),
+      name: z.string().optional().describe("Context name"),
+      systemPrompt: z.string().optional().describe("System prompt for LLM"),
+      personality: z.string().optional().describe("Custom personality description"),
+      temperature: z.number().min(0).max(1).optional().describe("Sampling temperature"),
+      maxTokens: z.number().min(1).optional().describe("Maximum tokens per response"),
+      maxHistoryTokens: z.number().min(1000).optional().describe("Maximum conversation history tokens"),
+      expiryDays: z.number().min(1).optional().describe("Expiry duration in days"),
+      presetId: z.string().optional().describe("Personality preset ID for create_from_preset"),
+      presetOverrides: z.record(z.any()).optional().describe("Parameter overrides for preset-based creation"),
+      page: z.number().min(1).optional().describe("Page number for list operation"),
+      pageSize: z.number().min(1).max(100).optional().describe("Page size for list operation"),
+      includeExpired: z.boolean().optional().describe("Include expired contexts in list")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
+  },
+  async (args, extra) => {
+    const request = { params: { name: "context-manage", arguments: args } } as any;
+    const result = await contextMemory.handleToolCall(request);
+    return result || { content: [{ type: 'text', text: 'No response from context-manage tool' }] };
+  }
+);
+
+server.registerTool(
+  "personality-preset-manage", 
+  {
+    title: "Personality Preset Management",
+    description: "Manage personality presets for context creation",
+    inputSchema: {
+      action: z.enum(['create', 'list', 'get', 'update', 'delete']).describe("Action to perform"),
+      presetId: z.string().optional().describe("Preset ID for operations"),
+      name: z.string().optional().describe("Preset name"),
+      description: z.string().optional().describe("Preset description"),
+      systemPrompt: z.string().optional().describe("Core personality system prompt"),
+      defaultPersonality: z.string().optional().describe("Default personality description"),
+      defaultSettings: z.record(z.any()).optional().describe("Default parameter values"),
+      metadata: z.record(z.any()).optional().describe("Additional metadata"),
+      page: z.number().min(1).optional().describe("Page number for list operation"),
+      pageSize: z.number().min(1).max(100).optional().describe("Page size for list operation"),
+      includeInactive: z.boolean().optional().describe("Include inactive presets in list")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
+  },
+  async (args, extra) => {
+    const request = { params: { name: "personality-preset-manage", arguments: args } } as any;
+    const result = await contextMemory.handleToolCall(request);
+    return result || { content: [{ type: 'text', text: 'No response from personality-preset-manage tool' }] };
+  }
+);
+
+server.registerTool(
+  "context-chat",
+  {
+    title: "Context Chat",
+    description: "Chat with LLM using specific context personality and memory",
+    inputSchema: {
+      contextId: z.string().describe("Context ID to chat with"),
+      message: z.string().describe("User message"),
+      maintainPersonality: z.boolean().optional().describe("Whether to maintain personality consistency")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
+  },
+  async (args, extra) => {
+    const request = { params: { name: "context-chat", arguments: args } } as any;
+    const result = await contextMemory.handleToolCall(request);
+    return result || { content: [{ type: 'text', text: 'No response from context-chat tool' }] };
+  }
+);
+
+server.registerTool(
+  "conversation-manage",
+  {
+    title: "Conversation Management",
+    description: "Manage conversations within contexts (list, delete, clear)",
+    inputSchema: {
+      action: z.enum(['list', 'delete', 'clear']).describe("Action to perform"),
+      contextId: z.string().describe("Context ID"),
+      page: z.number().min(1).optional().describe("Page number for list operation"),
+      pageSize: z.number().min(1).max(100).optional().describe("Page size for list operation"),
+      reverse: z.boolean().optional().describe("Reverse chronological order"),
+      conversationIds: z.array(z.string()).optional().describe("Conversation IDs to delete"),
+      olderThan: z.string().optional().describe("Delete conversations older than this timestamp")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
+  },
+  async (args, extra) => {
+    const request = { params: { name: "conversation-manage", arguments: args } } as any;
+    const result = await contextMemory.handleToolCall(request);
+    return result || { content: [{ type: 'text', text: 'No response from conversation-manage tool' }] };
+  }
+);
+
 // Server startup
 async function main() {
   try {
     // Initialize templates file
     await initializeTemplatesFile();
     
+    // Initialize Context Memory System with LLM sampling capability
+    await contextMemory.initialize(server as any, async (messages, options) => {
+      return await server.server.createMessage({ messages, ...options });
+    });
+    
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("MCP Sampler Server is running on stdio...");
+    console.error("MCP Sampler Server with Context Memory System is running on stdio...");
   } catch (error) {
     console.error("Failed to start MCP Sampler Server:", error);
     process.exit(1);
@@ -731,11 +852,13 @@ async function main() {
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.error("Shutting down MCP Sampler Server...");
+  contextMemory.close();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error("Shutting down MCP Sampler Server...");
+  contextMemory.close();
   process.exit(0);
 });
 
