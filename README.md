@@ -91,6 +91,34 @@ const prompt = await client.getPrompt("explain-template", {
 });
 ```
 
+## Security & Safety
+
+### Database File Protection
+
+This project includes SQLite database files (like `context-memory.db`) that contain sensitive data including consultant personalities and conversation history. These files are protected by multiple layers of security:
+
+#### 🛡️ Multi-Layer Protection
+- **`.gitignore`**: Prevents new database files from being tracked
+- **Pre-commit hooks**: Automatically blocks commits containing database files
+- **Clear error messages**: Provides instructions when database files are detected
+
+#### ⚠️ Important Notes
+- **Never commit** `context-memory.db` or any `*.db`, `*.db-wal`, `*.db-shm` files
+- These files contain 12+ consultant personalities and sensitive conversation data
+- Loss of these files means losing valuable consultant expertise
+
+#### 🔧 Development Setup
+After cloning, run:
+```bash
+npm install  # Automatically installs husky pre-commit hooks
+```
+
+If you encounter database file commit errors:
+```bash
+git reset HEAD context-memory.db
+git reset HEAD *.db *.db-wal *.db-shm
+```
+
 ## Architecture
 
 This MCP server provides:
