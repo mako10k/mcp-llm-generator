@@ -10,3 +10,13 @@ build/
 
 # MCP configuration with sensitive data
 .vscode/mcp.json
+
+# Template files with user data
+templates/templates.json
+
+data/
+logs/
+
+# Development and internal documentation (archived in memory)
+.github/
+vscode/

@@ -1,60 +1,43 @@
-# MCP Sampler
+# MCP LLM Generator
 
-最新のTypeScript MCP SDKを使用したサンプリング機能付きMCPサーバーです。
+A Model Context Protocol (MCP) server with LLM text generation capabilities using the latest TypeScript MCP SDK.
 
-## 機能
+## Features
 
-### ツール
-- **sample**: LLMサンプリング機能を使用してテキスト、コード、分析、要約を生成
-- **health**: サーバーのヘルスチェック
+### Tools
+- **llm-generate**: Generate text using LLM via MCP sampling protocol (server-to-client-to-LLM delegation)
+- **template-execute**: Execute predefined templates with parameter substitution via LLM text generation
+- **template-manage**: Add, update, delete, and list templates with file-based persistence
+- **template-to-params**: Convert templates into parameters suitable for LLM text generation
 
-### リソース
-- **sample-config**: サンプル設定情報
-- **sample-result**: 動的サンプル結果 (テンプレート付き)
+### Resources
+- **template-list**: Dynamic list of available templates
+- **template-detail**: Detailed template information with parameters
 
-### プロンプト
-- **sample-template**: サンプルリクエスト用のテンプレート
+### Prompts
+- **explain-template**: Template for explaining topics in various styles
+- **review-template**: Template for code review and analysis
 
-## セットアップ
+## Setup
 
-1. 依存関係のインストール:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. TypeScriptのコンパイル:
+2. Build TypeScript:
 ```bash
 npm run build
 ```
 
-3. MCP設定ファイルのセットアップ:
-```bash
-# テンプレートをコピーして設定
-cp .vscode/mcp.json.template .vscode/mcp.json
-# 必要に応じて API キーなどを設定
-```
-
-4. 開発モードでの実行:
-```bash
-npm run dev
-```
-
-5. 本番モードでの実行:
+3. Run the server:
 ```bash
 npm start
 ```
 
-## 重要な注意事項
+## Configuration
 
-`.vscode/mcp.json` ファイルには機密情報（APIキーなど）が含まれる可能性があります。
-このファイルは `.gitignore` に含まれており、リポジトリにコミットされません。
-設定時は `.vscode/mcp.json.template` をコピーして使用してください。
-
-## MCP設定
-
-### Claude Desktop設定例
-
-`~/.cursor/mcp.json` または `~/.claude/mcp.json` に以下を追加:
+Add the following to your MCP client configuration (e.g., `~/.claude/mcp.json`):
 
 ```json
 {
@@ -68,100 +51,55 @@ npm start
 }
 ```
 
-### VS Code MCP設定例
+## Usage
 
-`.vscode/mcp.json` に以下を追加:
-
-```json
-{
-  "servers": {
-    "mcp-sampler": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-        "/path/to/mcp-sampler/build/index.js"
-      ]
-    }
-  }
-}
-```
-
-## 使用例
-
-### sampleツールの使用
+### Using Tools
 
 ```typescript
-// 基本的なテキストサンプル
-await client.callTool("sample", {
-  prompt: "TypeScriptの非同期処理について説明してください",
-  type: "text"
+// Generate text using LLM
+await client.callTool("llm-generate", {
+  messages: [
+    { role: "user", content: { type: "text", text: "Explain TypeScript generics" } }
+  ],
+  maxTokens: 500
 });
 
-// コードサンプル
-await client.callTool("sample", {
-  prompt: "React コンポーネントの例を作成してください",
-  type: "code",
-  maxTokens: 1000
-});
-
-// 分析サンプル
-await client.callTool("sample", {
-  prompt: "この売上データの傾向を分析してください: [データ]",
-  type: "analysis",
-  temperature: 0.3
+// Execute a template
+await client.callTool("template-execute", {
+  templateName: "explain-template",
+  args: { topic: "machine learning", style: "beginner" }
 });
 ```
 
-### リソースの読み取り
+### Reading Resources
 
 ```typescript
-// 設定の取得
-const config = await client.readResource({ uri: "sample://config" });
+// List available templates
+const templates = await client.readResource({ uri: "mcp-llm-generator://template-list" });
 
-// 特定の結果の取得
-const result = await client.readResource({ uri: "sample://results/abc123" });
+// Get template details
+const template = await client.readResource({ uri: "mcp-llm-generator://template-detail/explain-template" });
 ```
 
-### プロンプトの使用
+### Using Prompts
 
 ```typescript
-// サンプルテンプレートの取得
-const prompt = await client.getPrompt("sample-template", {
-  topic: "機械学習",
+// Get prompt template
+const prompt = await client.getPrompt("explain-template", {
+  topic: "machine learning",
   style: "technical"
 });
 ```
 
-## アーキテクチャ
+## Architecture
 
-このMCPサーバーは以下の特徴を持ちます：
+This MCP server provides:
 
-- **Sampling機能**: MCP仕様のsampling機能を使用してLLMと対話
-- **リソーステンプレート**: 動的リソースの生成
-- **構造化データ**: ツールの結果に構造化されたメタデータを含める
-- **エラーハンドリング**: 堅牢なエラー処理とログ記録
-- **型安全性**: TypeScriptとZodを使用した型安全な実装
+- **LLM text generation**: Direct text generation using MCP sampling protocol
+- **Template system**: Reusable prompt templates with parameter substitution
+- **Resource management**: Dynamic access to templates and metadata
+- **Type safety**: Full TypeScript implementation with Zod validation
 
-## 開発
-
-### ビルド
-```bash
-npm run build
-```
-
-### 開発用サーバー起動
-```bash
-npm run dev
-```
-
-### デバッグ
-
-MCPサーバーのデバッグには、[MCP Inspector](https://github.com/modelcontextprotocol/inspector)を使用できます：
-
-```bash
-npx @modelcontextprotocol/inspector node build/index.js
-```
-
-## ライセンス
+## License
 
 MIT License

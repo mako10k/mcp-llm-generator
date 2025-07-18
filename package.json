@@ -1,14 +1,51 @@
 {
-  "name": "mcp-sampler",
+  "name": "@mako10k/mcp-llm-generator",
   "version": "1.0.0",
-  "description": "MCP Server with sample tool implementation",
+  "description": "MCP server for LLM text generation with template management using TypeScript SDK",
   "type": "module",
   "main": "build/index.js",
+  "bin": {
+    "mcp-llm-generator": "build/index.js"
+  },
+  "files": [
+    "build/**/*",
+    "templates/templates.json.sample",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
     "dev": "tsx src/index.ts",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "llm",
+    "text-generation",
+    "templates",
+    "typescript",
+    "ai",
+    "claude",
+    "anthropic"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mako10k/mcp-llm-generator.git"
+  },
+  "homepage": "https://github.com/mako10k/mcp-llm-generator#readme",
+  "bugs": {
+    "url": "https://github.com/mako10k/mcp-llm-generator/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "mako10k",
+    "url": "https://github.com/mako10k"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.2.0",
@@ -18,13 +55,5 @@
     "@types/node": "^20.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.0"
-  },
-  "keywords": [
-    "mcp",
-    "model-context-protocol",
-    "sample",
-    "typescript"
-  ],
-  "author": "",
-  "license": "MIT"
+  }
 }

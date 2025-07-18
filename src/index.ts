@@ -5,7 +5,19 @@
  * This server demonstrates:
  * - Basic MCP server setup using TypeScript SDK
  * - Implementation of a 'sample' tool that uses LLM sampling
- * - Resource exposure for sample configurations
+ * - Resource// Template execution tool implementation
+server.registerTool(
+  "template-execute",
+  {
+    title: "Template Execution",
+    description: "Execute a predefined template with parameter substitution via LLM text generation",
+    inputSchema: {
+      templateName: z.string().describe("Name of the template to execute"),
+      args: z.record(z.string()).describe("Arguments for template parameter substitution"),
+      maxTokens: z.number().optional().default(500).describe("Maximum tokens to generate"),
+      temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
+      includeContext: z.enum(["none", "thisServer", "allServers"]).optional().default("none").describe("Context inclusion level")
+    }sample configurations
  * - Prompt templates for sample operations
  */
 
@@ -67,8 +79,10 @@ const SAMPLE_TEMPLATES: SampleTemplate[] = [
 ];
 
 // Template expansion helper function
-function expandTemplate(templateName: string, args: Record<string, string>): { systemPrompt: string; userMessage: string; template: SampleTemplate } {
-  const template = SAMPLE_TEMPLATES.find(t => t.name === templateName);
+async function expandTemplate(templateName: string, args: Record<string, string>): Promise<{ systemPrompt: string; userMessage: string; template: SampleTemplate }> {
+  const templates = await loadTemplatesFromFile();
+  const template = templates.find(t => t.name === templateName);
+  
   if (!template) {
     throw new Error(`Template '${templateName}' not found`);
   }
@@ -132,21 +146,24 @@ server.registerResource(
     description: "Available sample templates with parameters",
     mimeType: "application/json"
   },
-  async () => ({
-    contents: [{
-      uri: "sample://templates",
-      text: JSON.stringify({
-        templates: SAMPLE_TEMPLATES.map(template => ({
-          name: template.name,
-          description: `Template: ${template.name}`,
-          parameters: template.parameters,
-          systemPrompt: template.systemPrompt,
-          userMessage: template.userMessage
-        })),
-        totalCount: SAMPLE_TEMPLATES.length
-      }, null, 2)
-    }]
-  })
+  async () => {
+    const templates = await loadTemplatesFromFile();
+    return {
+      contents: [{
+        uri: "sample://templates",
+        text: JSON.stringify({
+          templates: templates.map(template => ({
+            name: template.name,
+            description: `Template: ${template.name}`,
+            parameters: template.parameters,
+            systemPrompt: template.systemPrompt,
+            userMessage: template.userMessage
+          })),
+          totalCount: templates.length
+        }, null, 2)
+      }]
+    };
+  }
 );
 
 // Dynamic sample results resource template
@@ -176,7 +193,8 @@ server.registerResource(
     mimeType: "application/json"
   },
   async (uri, { name }) => {
-    const template = SAMPLE_TEMPLATES.find(t => t.name === name);
+    const templates = await loadTemplatesFromFile();
+    const template = templates.find(t => t.name === name);
     if (!template) {
       return {
         contents: [{
@@ -184,7 +202,7 @@ server.registerResource(
           text: JSON.stringify({
             error: "Template not found",
             templateName: name,
-            availableTemplates: SAMPLE_TEMPLATES.map(t => t.name)
+            availableTemplates: templates.map(t => t.name)
           }, null, 2)
         }]
       };
@@ -214,22 +232,26 @@ server.registerResource(
 
 // Template execution tool
 server.registerTool(
-  "sample-template-exec",
+  "template-execute",
   {
-    title: "Execute Sample Template",
-    description: "Execute a predefined sample template with parameter substitution using direct internal sampling",
+    title: "Template Execution",
+    description: "Execute predefined templates with parameter substitution via LLM text generation",
     inputSchema: {
       templateName: z.string().describe("Name of the template to execute"),
       args: z.record(z.string()).describe("Arguments for template parameter substitution"),
       maxTokens: z.number().optional().default(500).describe("Maximum tokens to generate"),
       temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
       includeContext: z.enum(["none", "thisServer", "allServers"]).optional().default("none").describe("Context inclusion level")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
     }
   },
   async ({ templateName, args, maxTokens, temperature, includeContext }, extra) => {
     try {
       // Expand the template
-      const { systemPrompt, userMessage, template } = expandTemplate(templateName, args);
+      const { systemPrompt, userMessage, template } = await expandTemplate(templateName, args);
 
       // Direct internal call to sampling functionality
       const response = await server.server.createMessage({
@@ -308,12 +330,12 @@ server.registerTool(
   }
 );
 
-// Sample tool implementation
+// LLM text generation tool
 server.registerTool(
-  "sample",
+  "llm-generate",
   {
-    title: "Sample Tool",
-    description: "Execute a sample operation using LLM sampling capabilities with direct createMessage parameters",
+    title: "LLM Text Generation",
+    description: "Generate text using LLM via MCP sampling protocol (server-to-client-to-LLM delegation)",
     inputSchema: {
       messages: z.array(z.object({
         role: z.enum(["user", "assistant"]).describe("Message role"),
@@ -326,6 +348,10 @@ server.registerTool(
       maxTokens: z.number().optional().default(500).describe("Maximum tokens to generate"),
       temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
       includeContext: z.enum(["none", "thisServer", "allServers"]).optional().default("none").describe("Context inclusion level")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: true
     }
   },
   async ({ messages, systemPrompt, maxTokens, temperature, includeContext }) => {
@@ -417,27 +443,282 @@ server.registerPrompt(
   })
 );
 
-// Health check tool
+// Template file I/O functionality
+import { promises as fs } from 'fs';
+import { join } from 'path';
+
+const TEMPLATES_DIR = './templates';
+const TEMPLATES_FILE = join(TEMPLATES_DIR, 'templates.json');
+
+// Template file initialization
+async function initializeTemplatesFile() {
+  try {
+    await fs.mkdir(TEMPLATES_DIR, { recursive: true });
+    
+    // Create initial templates if file doesn't exist
+    try {
+      await fs.access(TEMPLATES_FILE);
+    } catch {
+      await fs.writeFile(TEMPLATES_FILE, JSON.stringify(SAMPLE_TEMPLATES, null, 2));
+    }
+  } catch (error) {
+    console.error("Failed to initialize templates file:", error);
+  }
+}
+
+// Load templates from file
+async function loadTemplatesFromFile(): Promise<SampleTemplate[]> {
+  try {
+    const data = await fs.readFile(TEMPLATES_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Failed to load templates from file:", error);
+    return SAMPLE_TEMPLATES; // Fallback to default templates
+  }
+}
+
+// Save templates to file
+async function saveTemplatesToFile(templates: SampleTemplate[]): Promise<void> {
+  try {
+    await fs.writeFile(TEMPLATES_FILE, JSON.stringify(templates, null, 2));
+  } catch (error) {
+    console.error("Failed to save templates to file:", error);
+    throw error;
+  }
+}
+
+// Template management tool
 server.registerTool(
-  "health",
+  "template-manage",
   {
-    title: "Health Check",
-    description: "Check the health status of the sampler server",
-    inputSchema: {}
+    title: "Template Management",
+    description: "Add, update, delete, and list templates with file-based persistence",
+    inputSchema: {
+      action: z.enum(["add", "update", "delete", "list"]).describe("Action to perform"),
+      name: z.string().optional().describe("Template name (required for add, update, delete)"),
+      template: z.object({
+        name: z.string(),
+        systemPrompt: z.string(),
+        userMessage: z.string(),
+        parameters: z.record(z.string())
+      }).optional().describe("Template data (required for add, update)")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
   },
-  async () => ({
-    content: [
-      {
-        type: "text",
-        text: `MCP Sampler Server Status: ✓ Healthy\nVersion: 1.0.0\nTimestamp: ${new Date().toISOString()}\nSampling Capability: Available`
+  async ({ action, name, template }) => {
+    try {
+      let templates = await loadTemplatesFromFile();
+
+      switch (action) {
+        case "list":
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                templates: templates.map(t => ({
+                  name: t.name,
+                  parameters: Object.keys(t.parameters)
+                })),
+                totalCount: templates.length
+              }, null, 2)
+            }]
+          };
+
+        case "add":
+          if (!template) {
+            throw new Error("Template data is required for add action");
+          }
+          
+          // Check for duplicates
+          if (templates.find(t => t.name === template.name)) {
+            throw new Error(`Template '${template.name}' already exists`);
+          }
+          
+          templates.push(template);
+          await saveTemplatesToFile(templates);
+          
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Template '${template.name}' added successfully`,
+                template
+              }, null, 2)
+            }]
+          };
+
+        case "update":
+          if (!name || !template) {
+            throw new Error("Template name and data are required for update action");
+          }
+          
+          const updateIndex = templates.findIndex(t => t.name === name);
+          if (updateIndex === -1) {
+            throw new Error(`Template '${name}' not found`);
+          }
+          
+          templates[updateIndex] = template;
+          await saveTemplatesToFile(templates);
+          
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Template '${name}' updated successfully`,
+                template
+              }, null, 2)
+            }]
+          };
+
+        case "delete":
+          if (!name) {
+            throw new Error("Template name is required for delete action");
+          }
+          
+          const deleteIndex = templates.findIndex(t => t.name === name);
+          if (deleteIndex === -1) {
+            throw new Error(`Template '${name}' not found`);
+          }
+          
+          const deletedTemplate = templates.splice(deleteIndex, 1)[0];
+          await saveTemplatesToFile(templates);
+          
+          return {
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Template '${deletedTemplate.name}' deleted successfully`,
+                deletedTemplate
+              }, null, 2)
+            }]
+          };
+
+        default:
+          throw new Error(`Unknown action: ${action}`);
       }
-    ]
-  })
+    } catch (error) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: error instanceof Error ? error.message : "Unknown error",
+            action,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
+// Template parameter generation tool
+server.registerTool(
+  "template-to-params",
+  {
+    title: "Template to Parameters Conversion",
+    description: "Convert templates into parameters suitable for LLM text generation",
+    inputSchema: {
+      templateName: z.string().describe("Name of the template to use"),
+      args: z.record(z.string()).describe("Arguments for template parameter substitution"),
+      maxTokens: z.number().optional().default(500).describe("Maximum tokens to generate"),
+      temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
+      includeContext: z.enum(["none", "thisServer", "allServers"]).optional().default("none").describe("Context inclusion level")
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    }
+  },
+  async ({ templateName, args, maxTokens, temperature, includeContext }) => {
+    try {
+      const templates = await loadTemplatesFromFile();
+      const template = templates.find(t => t.name === templateName);
+      
+      if (!template) {
+        throw new Error(`Template '${templateName}' not found`);
+      }
+
+      // Expand template parameters
+      const { systemPrompt, userMessage } = await expandTemplate(templateName, args);
+
+      // Generate parameters for llm-generate tool
+      const sampleParams = {
+        messages: [
+          {
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: userMessage
+            }
+          }
+        ],
+        systemPrompt,
+        maxTokens,
+        temperature,
+        includeContext
+      };
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            templateName,
+            expandedSystemPrompt: systemPrompt,
+            expandedUserMessage: userMessage,
+            sampleParameters: sampleParams,
+            usage: {
+              toolName: "sample",
+              description: "Use these parameters with the sample tool",
+              example: `Use sample tool with the generated parameters`
+            },
+            metadata: {
+              timestamp: new Date().toISOString(),
+              templateParameters: Object.keys(template.parameters),
+              providedArgs: Object.keys(args)
+            }
+          }, null, 2)
+        }],
+        structuredContent: {
+          templateName,
+          expandedSystemPrompt: systemPrompt,
+          expandedUserMessage: userMessage,
+          sampleParameters: sampleParams,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            templateParameters: Object.keys(template.parameters),
+            providedArgs: Object.keys(args)
+          }
+        }
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: error instanceof Error ? error.message : "Unknown error",
+            templateName,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    }
+  }
 );
 
 // Server startup
 async function main() {
   try {
+    // Initialize templates file
+    await initializeTemplatesFile();
+    
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("MCP Sampler Server is running on stdio...");

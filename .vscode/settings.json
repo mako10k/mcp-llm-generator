@@ -1,7 +1,0 @@
-{
-    "chat.mcp.serverSampling": {
-        "mcp-sampler/.vscode/mcp.json: mcp-sampler": {
-            "allowedDuringChat": true
-        }
-    }
-}

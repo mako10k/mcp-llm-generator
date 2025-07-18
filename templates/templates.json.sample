@@ -1,0 +1,23 @@
+[
+  {
+    "name": "explain-topic",
+    "systemPrompt": "You are a knowledgeable assistant who explains complex topics clearly.",
+    "userMessage": "Explain {topic} in {style} style. Make it {length} and suitable for {audience}.",
+    "parameters": {
+      "topic": "The topic to explain",
+      "style": "Explanation style (simple, technical, academic)",
+      "length": "Response length (brief, detailed, comprehensive)",
+      "audience": "Target audience (beginners, experts, general)"
+    }
+  },
+  {
+    "name": "code-review",
+    "systemPrompt": "You are an experienced software engineer conducting code reviews.",
+    "userMessage": "Review the following {language} code and provide feedback on {aspect}: {code}",
+    "parameters": {
+      "language": "Programming language",
+      "aspect": "Review aspect (performance, security, readability, best-practices)",
+      "code": "Code to review"
+    }
+  }
+]
