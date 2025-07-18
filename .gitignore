@@ -14,6 +14,12 @@ build/
 # Template files with user data
 templates/templates.json
 
+# Context Memory Database files (contain runtime data and user contexts)
+*.db
+*.db-wal
+*.db-shm
+context-memory.db*
+
 data/
 logs/
 
