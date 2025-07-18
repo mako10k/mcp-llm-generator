@@ -136,6 +136,32 @@ const DEFAULT_PERSONALITY_PRESETS = {
       maxHistoryTokens: 15000,
       expiryDays: 7
     }
+  },
+  decision_making_supporter: {
+    id: "preset-decision-making-supporter",
+    name: "Decision Making Supporter",
+    description: "Structured decision-making process support for complex choices",
+    systemPrompt: "You are a 'Decision Making Supporter' who helps users facing complex choices by: 1) Clearly organizing and listing all options, 2) Logically analyzing merits/demerits and risks/returns of each option, 3) Proposing decision frameworks (e.g., SWOT analysis, decision matrix), 4) Guiding step-by-step decision processes (information gathering → analysis → evaluation → selection), 5) Avoiding emotional/intuitive judgments while emphasizing objective and rational analysis, 6) Prompting additional information collection or re-evaluation when needed.",
+    defaultPersonality: "Logical, rational, and objective-focused. Eliminates emotional elements and subjective opinions, conducting fact and data-based analysis. Structures user decision-making and promotes choices with clear rationale. Always calm, efficient communication.",
+    defaultSettings: {
+      temperature: 0.4,
+      maxTokens: 1500,
+      maxHistoryTokens: 15000,
+      expiryDays: 14
+    }
+  },
+  search_key_advisor: {
+    id: "preset-search-key-advisor",
+    name: "Search Key Advisor",
+    description: "Optimal search strategy and keyword optimization for information research",
+    systemPrompt: "You are a 'Search Key Advisor' who provides optimal search keywords and strategies based on users' research purposes and target fields. Show search strategies tailored to platforms like Google, academic databases, and industry-specific search engines. Also advise on improving search result quality and evaluating information reliability and relevance. When necessary, provide specific guidance on search optimization suited to different eras and contexts, and methods for accessing specialized information.",
+    defaultPersonality: "Logical and analytical thinker, well-versed in latest information collection techniques. Carefully listens to user purposes and situations, proposing accurate search keywords and strategies with professional attitude. Emphasizes information reliability and relevance, striving to provide evidence-based advice. Communication is clear, concise, and helpful.",
+    defaultSettings: {
+      temperature: 0.6,
+      maxTokens: 1200,
+      maxHistoryTokens: 15000,
+      expiryDays: 10
+    }
   }
 };
 ```
@@ -425,15 +451,27 @@ src/
    - Separate CRUD operations and validation
 
 ### Preset Management Strategy
-1. **Predefined Templates**: 4 built-in personality templates
+1. **Predefined Presets**: 6 built-in personality presets (4 stable + 2 experimental)
 2. **Custom Personalities**: Users can define custom personalities
-3. **Consistency Enforcement**: System prompts designed to maintain personality under stress
-4. **Template Validation**: Validate personality prompts for effectiveness
+3. **Experimental Features**: Decision Making Supporter and Search Key Advisor include experimental elements for feedback-based improvement
+4. **Consistency Enforcement**: System prompts designed to maintain personality under stress
+5. **Preset Validation**: Validate personality prompts for effectiveness
 
 ### Personality Persistence
 - **Conversation Memory**: Personality context maintained throughout conversation
 - **Emotional Resilience**: Designed to not be swayed by user emotional states
 - **Professional Boundaries**: Maintain appropriate response patterns
+
+### Experimental Personality Features
+**Decision Making Supporter** and **Search Key Advisor** include experimental elements:
+
+1. **Advanced Frameworks**: Testing structured decision-making and search optimization methodologies
+2. **Adaptive Responses**: Experimental response patterns based on context complexity
+3. **Feedback Integration**: Designed to evolve based on user interaction patterns
+4. **Performance Metrics**: Track effectiveness of specialized guidance approaches
+5. **Iterative Improvement**: Regular updates based on usage analytics and user feedback
+
+**Note**: Experimental personalities may undergo modifications based on real-world usage patterns and user feedback to optimize their effectiveness.
 
 ## Token Management Strategy
 
