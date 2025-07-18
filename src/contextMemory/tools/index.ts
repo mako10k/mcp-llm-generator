@@ -472,16 +472,21 @@ export class ContextMemoryTools {
       includeExpired: input.includeExpired || false
     });
 
-    const output: ContextManageOutput = {
+    // Optimized response - essential context summary only
+    const optimizedOutput = {
       success: true,
-      contexts: result.contexts,
+      contexts: result.contexts.map(ctx => ({
+        id: ctx.id,
+        name: ctx.name,
+        isExpired: isContextExpired(ctx)
+      })),
       totalCount: result.totalCount,
-      message: `Found ${result.totalCount} contexts (showing page ${result.page} of ${Math.ceil(result.totalCount / result.pageSize)})`
+      page: result.page
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -888,16 +893,22 @@ export class ContextMemoryTools {
       reverse: input.reverse
     });
 
-    const output: ConversationManageOutput = {
+    // Optimized response - conversation summary only
+    const optimizedOutput = {
       success: true,
-      conversations: result.conversations,
+      conversations: result.conversations.map(conv => ({
+        id: conv.id,
+        role: conv.role,
+        preview: conv.content.substring(0, 50) + (conv.content.length > 50 ? '...' : ''),
+        createdAt: conv.createdAt
+      })),
       totalCount: result.totalCount,
-      message: `Found ${result.totalCount} conversations (showing page ${result.page} of ${Math.ceil(result.totalCount / result.pageSize)})`
+      page: result.page
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
