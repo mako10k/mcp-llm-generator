@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/mako10k-mcp-llm-generator-badge.png)](https://mseep.ai/app/mako10k-mcp-llm-generator)
+
 # MCP LLM Generator v2 🤖
 
 [![npm version](https://badge.fury.io/js/%40mako10k%2Fmcp-llm-generator.svg)](https://badge.fury.io/js/%40mako10k%2Fmcp-llm-generator)
