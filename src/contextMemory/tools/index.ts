@@ -446,15 +446,20 @@ export class ContextMemoryTools {
 
       const createdContext = this.db.createContext(context);
 
-      const output: ContextManageOutput = {
+      // Optimized response - essential creation result only
+      const optimizedOutput = {
         success: true,
-        context: createdContext,
-        message: `Context "${createdContext.name}" created from preset "${input.presetId}" with ID: ${createdContext.id}`
+        context: {
+          id: createdContext.id,
+          name: createdContext.name,
+          personality: createdContext.personality.substring(0, 50) + (createdContext.personality.length > 50 ? '...' : ''),
+          status: 'created'
+        }
       };
 
       return {
         content: [
-          { type: 'text', text: JSON.stringify(output, null, 2) }
+          { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
         ]
       };
     } catch (error) {
@@ -507,15 +512,23 @@ export class ContextMemoryTools {
       };
     }
 
-    const output: ContextManageOutput = {
+    // Optimized response - essential context details only
+    const optimizedOutput = {
       success: true,
-      context,
-      message: `Context "${context.name}" retrieved successfully`
+      context: {
+        id: context.id,
+        name: context.name,
+        personality: context.personality.substring(0, 100) + (context.personality.length > 100 ? '...' : ''),
+        temperature: context.temperature,
+        maxTokens: context.maxTokens,
+        isActive: context.isActive,
+        expiresAt: context.expiresAt
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -548,15 +561,21 @@ export class ContextMemoryTools {
 
     const savedContext = this.db.updateContext(updatedContext);
 
-    const output: ContextManageOutput = {
+    // Optimized response - essential update confirmation only
+    const optimizedOutput = {
       success: true,
-      context: savedContext,
-      message: `Context "${savedContext.name}" updated successfully`
+      context: {
+        id: savedContext.id,
+        name: savedContext.name,
+        personality: savedContext.personality.substring(0, 50) + (savedContext.personality.length > 50 ? '...' : ''),
+        updatedAt: savedContext.updatedAt,
+        status: 'updated'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -577,14 +596,18 @@ export class ContextMemoryTools {
       };
     }
 
-    const output: ContextManageOutput = {
+    // Optimized response - minimal deletion confirmation
+    const optimizedOutput = {
       success: true,
-      message: `Context with ID ${input.contextId} deleted successfully`
+      deleted: {
+        id: input.contextId,
+        status: 'deleted'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -638,15 +661,20 @@ export class ContextMemoryTools {
 
     const createdPreset = this.db.createPersonalityPreset(preset);
 
-    const output: PersonalityPresetManageOutput = {
+    // Optimized response - essential creation result only
+    const optimizedOutput = {
       success: true,
-      preset: createdPreset,
-      message: `Personality preset "${createdPreset.name}" created successfully with ID: ${createdPreset.id}`
+      preset: {
+        id: createdPreset.id,
+        name: createdPreset.name,
+        description: createdPreset.description.substring(0, 50) + (createdPreset.description.length > 50 ? '...' : ''),
+        status: 'created'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -658,16 +686,22 @@ export class ContextMemoryTools {
       includeInactive: input.includeInactive || false
     });
 
-    const output: PersonalityPresetManageOutput = {
+    // Optimized response - essential preset summary only
+    const optimizedOutput = {
       success: true,
-      presets: result.presets,
+      presets: result.presets.map(preset => ({
+        id: preset.id,
+        name: preset.name,
+        description: preset.description.substring(0, 50) + (preset.description.length > 50 ? '...' : ''),
+        isActive: preset.isActive
+      })),
       totalCount: result.totalCount,
-      message: `Found ${result.totalCount} presets (showing page ${result.page} of ${Math.ceil(result.totalCount / result.pageSize)})`
+      page: result.page
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -688,15 +722,24 @@ export class ContextMemoryTools {
       };
     }
 
-    const output: PersonalityPresetManageOutput = {
+    // Optimized response - essential preset details only
+    const optimizedOutput = {
       success: true,
-      preset,
-      message: `Preset "${preset.name}" retrieved successfully`
+      preset: {
+        id: preset.id,
+        name: preset.name,
+        description: preset.description.substring(0, 100) + (preset.description.length > 100 ? '...' : ''),
+        systemPrompt: preset.systemPrompt.substring(0, 200) + (preset.systemPrompt.length > 200 ? '...' : ''),
+        defaultPersonality: preset.defaultPersonality.substring(0, 100) + (preset.defaultPersonality.length > 100 ? '...' : ''),
+        isActive: preset.isActive,
+        createdAt: preset.createdAt,
+        updatedAt: preset.updatedAt
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -733,15 +776,21 @@ export class ContextMemoryTools {
 
     const savedPreset = this.db.updatePersonalityPreset(updatedPreset);
 
-    const output: PersonalityPresetManageOutput = {
+    // Optimized response - essential update confirmation only
+    const optimizedOutput = {
       success: true,
-      preset: savedPreset,
-      message: `Preset "${savedPreset.name}" updated successfully`
+      preset: {
+        id: savedPreset.id,
+        name: savedPreset.name,
+        description: savedPreset.description.substring(0, 50) + (savedPreset.description.length > 50 ? '...' : ''),
+        updatedAt: savedPreset.updatedAt,
+        status: 'updated'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -762,14 +811,18 @@ export class ContextMemoryTools {
       };
     }
 
-    const output: PersonalityPresetManageOutput = {
+    // Optimized response - minimal deletion confirmation
+    const optimizedOutput = {
       success: true,
-      message: `Preset with ID ${input.presetId} deleted successfully`
+      deleted: {
+        id: input.presetId,
+        status: 'deleted'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -927,15 +980,18 @@ export class ContextMemoryTools {
       };
     }
 
-    const output: ConversationManageOutput = {
+    // Optimized response - minimal deletion summary
+    const optimizedOutput = {
       success: true,
-      deletedCount,
-      message: `Deleted ${deletedCount} conversations`
+      deleted: {
+        count: deletedCount,
+        status: 'deleted'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }
@@ -943,15 +999,19 @@ export class ContextMemoryTools {
   private handleConversationClear(input: ConversationManageInput): CallToolResult {
     const deletedCount = this.db.clearConversations(input.contextId);
 
-    const output: ConversationManageOutput = {
+    // Optimized response - minimal clear confirmation
+    const optimizedOutput = {
       success: true,
-      deletedCount,
-      message: `Cleared ${deletedCount} conversations from context`
+      cleared: {
+        contextId: input.contextId,
+        count: deletedCount,
+        status: 'cleared'
+      }
     };
 
     return {
       content: [
-        { type: 'text', text: JSON.stringify(output, null, 2) }
+        { type: 'text', text: JSON.stringify(optimizedOutput, null, 2) }
       ]
     };
   }

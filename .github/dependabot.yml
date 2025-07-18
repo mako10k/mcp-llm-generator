@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "mako10k"
+    assignees:
+      - "mako10k"
+    commit-message:
+      prefix: "chore"
+      include: "scope"

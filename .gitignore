@@ -23,6 +23,11 @@ context-memory.db*
 data/
 logs/
 
-# Development and internal documentation (archived in memory)
-.github/
-vscode/
+# Development files
+*.tgz
+test-integration.js
+.mcp-config.json
+PROJECT_FINAL_REPORT.md
+
+# VS Code settings (preserve for development)
+.vscode/
