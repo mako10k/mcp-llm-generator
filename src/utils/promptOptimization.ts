@@ -2,6 +2,13 @@
 import { encoding_for_model, get_encoding } from 'tiktoken';
 import { PersonaCapabilities, CompressedCapabilities, PromptOptimizationOptions } from '../types/persona.js';
 
+/**
+ * 型安全なPersonaCapabilitiesユーティリティ関数
+ */
+function safeGetStringArray(array: string[] | undefined): string[] {
+  return Array.isArray(array) ? array : [];
+}
+
 export class PromptTokenManager {
   private encodings: Map<string, any> = new Map();
   
@@ -53,23 +60,23 @@ export class PromptTokenManager {
     switch (level) {
       case 'light':
         return {
-          expertise_tags: capabilities.expertise.slice(0, 8),
-          tool_summary: this.summarizeTools(capabilities.tools, 30),
-          key_restrictions: capabilities.restrictions.slice(0, 5)
+          expertise_tags: safeGetStringArray(capabilities.expertise).slice(0, 8),
+          tool_summary: this.summarizeTools(safeGetStringArray(capabilities.tools), 30),
+          key_restrictions: safeGetStringArray(capabilities.restrictions).slice(0, 5)
         };
       
       case 'medium':
         return {
-          expertise_tags: capabilities.expertise.slice(0, 5),
-          tool_summary: this.summarizeTools(capabilities.tools, 20),
-          key_restrictions: capabilities.restrictions.slice(0, 3)
+          expertise_tags: safeGetStringArray(capabilities.expertise).slice(0, 5),
+          tool_summary: this.summarizeTools(safeGetStringArray(capabilities.tools), 20),
+          key_restrictions: safeGetStringArray(capabilities.restrictions).slice(0, 3)
         };
       
       case 'heavy':
         return {
-          expertise_tags: capabilities.expertise.slice(0, 3),
-          tool_summary: this.summarizeTools(capabilities.tools, 15),
-          key_restrictions: capabilities.restrictions.slice(0, 2)
+          expertise_tags: safeGetStringArray(capabilities.expertise).slice(0, 3),
+          tool_summary: this.summarizeTools(safeGetStringArray(capabilities.tools), 15),
+          key_restrictions: safeGetStringArray(capabilities.restrictions).slice(0, 2)
         };
     }
   }
@@ -100,19 +107,22 @@ export class PromptTokenManager {
     const taskKeywords = this.extractKeywords(task.toLowerCase());
     
     // タスクに関連するツールを抽出
-    const relevantTools = allCapabilities.tools.filter(tool =>
+    const allTools = safeGetStringArray(allCapabilities.tools);
+    const allExpertise = safeGetStringArray(allCapabilities.expertise);
+    
+    const relevantTools = allTools.filter(tool =>
       taskKeywords.some(keyword => tool.toLowerCase().includes(keyword))
     );
     
     // タスクに関連する専門分野を抽出
-    const relevantExpertise = allCapabilities.expertise.filter(exp =>
+    const relevantExpertise = allExpertise.filter(exp =>
       taskKeywords.some(keyword => exp.toLowerCase().includes(keyword))
     );
     
     return this.compressCapabilities({
       ...allCapabilities,
-      tools: relevantTools.length > 0 ? relevantTools : allCapabilities.tools.slice(0, 3),
-      expertise: relevantExpertise.length > 0 ? relevantExpertise : allCapabilities.expertise.slice(0, 3)
+      tools: relevantTools.length > 0 ? relevantTools : allTools.slice(0, 3),
+      expertise: relevantExpertise.length > 0 ? relevantExpertise : allExpertise.slice(0, 3)
     });
   }
 

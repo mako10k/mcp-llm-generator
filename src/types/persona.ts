@@ -33,13 +33,13 @@ export interface SecurityValidationResult {
  */
 export interface PersonaCapabilities {
   // 専門分野タグ
-  expertise: string[];
+  expertise?: string[];
   
   // 利用可能なツール群
-  tools: string[];
+  tools?: string[];
   
   // 制限事項
-  restrictions: string[];
+  restrictions?: string[];
   
   // パフォーマンス指標
   performance_metrics?: {

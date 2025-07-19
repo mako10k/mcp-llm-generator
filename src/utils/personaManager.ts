@@ -12,6 +12,18 @@ import {
 import { promptTokenManager } from '../utils/promptOptimization.js';
 import { promptSecurityManager } from '../utils/promptSecurity.js';
 
+/**
+ * 型安全なPersonaCapabilitiesユーティリティ関数
+ */
+function safeGetStringArray(array: string[] | undefined): string[] {
+  return Array.isArray(array) ? array : [];
+}
+
+function safeJoinStringArray(array: string[] | undefined, separator: string = ', '): string {
+  const safeArray = safeGetStringArray(array);
+  return safeArray.length > 0 ? safeArray.join(separator) : '';
+}
+
 export class PersonaManager {
   private db: Database.Database;
 
@@ -328,34 +340,40 @@ export class PersonaManager {
     switch (strategy) {
       case 'union':
         return {
-          expertise: [...new Set(capabilities.flatMap(c => c.expertise))],
-          tools: [...new Set(capabilities.flatMap(c => c.tools))],
-          restrictions: [...new Set(capabilities.flatMap(c => c.restrictions))]
+          expertise: [...new Set(capabilities.flatMap(c => safeGetStringArray(c.expertise)))],
+          tools: [...new Set(capabilities.flatMap(c => safeGetStringArray(c.tools)))],
+          restrictions: [...new Set(capabilities.flatMap(c => safeGetStringArray(c.restrictions)))]
         };
 
       case 'intersection':
         const firstCap = capabilities[0];
+        const firstExpertise = safeGetStringArray(firstCap.expertise);
+        const firstTools = safeGetStringArray(firstCap.tools);
+        const firstRestrictions = safeGetStringArray(firstCap.restrictions);
+        
         return {
-          expertise: firstCap.expertise.filter(exp => 
-            capabilities.every(c => c.expertise.includes(exp))
+          expertise: firstExpertise.filter(exp => 
+            capabilities.every(c => safeGetStringArray(c.expertise).includes(exp))
           ),
-          tools: firstCap.tools.filter(tool => 
-            capabilities.every(c => c.tools.includes(tool))
+          tools: firstTools.filter(tool => 
+            capabilities.every(c => safeGetStringArray(c.tools).includes(tool))
           ),
-          restrictions: firstCap.restrictions.filter(res => 
-            capabilities.every(c => c.restrictions.includes(res))
+          restrictions: firstRestrictions.filter(res => 
+            capabilities.every(c => safeGetStringArray(c.restrictions).includes(res))
           )
         };
 
       case 'weighted_average':
         // 重み付き平均（簡易実装）
-        const weightedExpertise = this.getTopSkills(capabilities.flatMap(c => c.expertise), 10);
-        const weightedTools = this.getTopSkills(capabilities.flatMap(c => c.tools), 15);
+        const allExpertise = capabilities.flatMap(c => safeGetStringArray(c.expertise));
+        const allTools = capabilities.flatMap(c => safeGetStringArray(c.tools));
+        const weightedExpertise = this.getTopSkills(allExpertise, 10);
+        const weightedTools = this.getTopSkills(allTools, 15);
         
         return {
           expertise: weightedExpertise,
           tools: weightedTools,
-          restrictions: [...new Set(capabilities.flatMap(c => c.restrictions))]
+          restrictions: [...new Set(capabilities.flatMap(c => safeGetStringArray(c.restrictions)))]
         };
 
       default:
