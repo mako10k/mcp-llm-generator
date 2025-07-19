@@ -1,0 +1,117 @@
+@startuml MCP-System-Architecture
+
+!define RECTANGLE class
+!define COMPONENT component
+
+title MCP LLM Generator System Architecture
+
+' Define colors
+!define CLIENT_COLOR #E3F2FD
+!define SERVER_COLOR #F3E5F5  
+!define STORAGE_COLOR #E8F5E8
+!define COMM_COLOR #FFF3E0
+
+package "VS Code (MCP Client)" as vscode <<CLIENT_COLOR>> {
+  component "UI Display Control" as ui
+  component "Server Management" as mgmt
+  component "Tool Cache" as cache
+  component "Lifecycle Control" as lifecycle
+  
+  ui -[hidden]- mgmt
+  mgmt -[hidden]- cache
+  cache -[hidden]- lifecycle
+}
+
+package "MCP Communication Layer" as comm <<COMM_COLOR>> {
+  interface "stdio" as stdio
+  interface "JSON-RPC 2.0" as jsonrpc
+  
+  stdio - jsonrpc : protocol
+}
+
+package "MCP Server Cluster" as servers {
+  
+  package "llm-generator" as llm <<SERVER_COLOR>> {
+    component "External LLM API Integration" as llm_api
+    component "Context Management" as context_mgmt
+    component "Personality & Chat History" as personality
+    component "Template Management" as templates
+  }
+  
+  package "assoc-memory" as memory <<SERVER_COLOR>> {
+    component "Associative Memory Mgmt" as assoc_mgmt
+    component "Vector Search" as vector_search
+    component "Scope & Tag Management" as scope_mgmt
+    component "Session Management" as session_mgmt
+  }
+  
+  package "mcp-shell-server" as shell <<SERVER_COLOR>> {
+    component "Command Execution" as cmd_exec
+    component "Process Management" as proc_mgmt
+    component "Security Control" as security
+    component "Output & Log Management" as output_mgmt
+  }
+  
+  package "google" as google <<SERVER_COLOR>> {
+    component "Google API Integration" as google_api
+    component "Search Result Processing" as search_proc
+    component "Cache Management" as search_cache
+  }
+}
+
+package "Persistence Layer" as storage <<STORAGE_COLOR>> {
+  database "SQLite DB\n(context-memory.db)" as sqlite
+  database "ChromaDB\n(vector storage)" as chromadb
+  file "Log Files\n(execution history)" as logfiles
+  file "Search Cache\n(result storage)" as searchcache
+}
+
+' Connections
+vscode --> comm : "Management & Communication"
+comm --> servers : "stdio/JSON-RPC"
+
+' Server to Storage connections
+llm --> sqlite : "Persistence"
+memory --> chromadb : "Persistence"
+shell --> logfiles : "Persistence"
+google --> searchcache : "Persistence"
+
+' Detailed connections within VS Code
+lifecycle --> mgmt : "Start/Stop Control"
+mgmt --> ui : "Status Display"
+mgmt --> cache : "Tool Information"
+
+' Data flow annotations
+note right of comm
+  **Communication Protocol**
+  • stdio (standard input/output)
+  • JSON-RPC 2.0
+  • Bidirectional communication
+  • Asynchronous messaging
+end note
+
+note bottom of vscode
+  **Lifecycle Management**
+  • Server start/stop/restart
+  • Auto-start on function_call
+  • Tool information cache
+  • Error detection & recovery
+end note
+
+note bottom of servers
+  **Server Responsibilities**
+  • Independent microservices
+  • Loosely coupled architecture
+  • Individual persistence strategy
+  • Specialized functionality
+end note
+
+note bottom of storage
+  **Persistence Strategy**
+  • Auto-restore on server restart
+  • Data consistency guarantee
+  • Backup & restore support
+  • Scalable storage
+end note
+
+@enduml

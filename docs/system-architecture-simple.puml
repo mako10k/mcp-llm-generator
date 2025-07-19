@@ -1,0 +1,39 @@
+@startuml MCP-System-Architecture-Simple
+
+title MCP LLM Generator System Architecture
+
+package "VS Code (MCP Client)" {
+  [UI Display]
+  [Server Management]
+  [Tool Cache]
+  [Lifecycle Control]
+}
+
+package "MCP Servers" {
+  [llm-generator]
+  [assoc-memory]
+  [mcp-shell-server]
+  [google]
+}
+
+package "Storage" {
+  database "SQLite"
+  database "ChromaDB"
+  file "Logs"
+  file "Cache"
+}
+
+[VS Code (MCP Client)] ||--|| [MCP Servers] : stdio/JSON-RPC
+[llm-generator] --> SQLite
+[assoc-memory] --> ChromaDB
+[mcp-shell-server] --> Logs
+[google] --> Cache
+
+note right of [VS Code (MCP Client)]
+  Lifecycle Management
+  - Start/Stop servers
+  - Auto-start on demand
+  - Cache tool info
+end note
+
+@enduml
