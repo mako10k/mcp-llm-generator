@@ -67,6 +67,7 @@
     "@modelcontextprotocol/sdk": "^1.2.0",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.2.0",
+    "tiktoken": "^1.0.21",
     "zod": "^3.22.4"
   },
   "devDependencies": {

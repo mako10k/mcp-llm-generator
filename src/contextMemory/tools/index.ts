@@ -441,7 +441,8 @@ export class ContextMemoryTools {
       const context = createContextFromPreset(
         input.presetId,
         input.name,
-        input.presetOverrides
+        input.presetOverrides,
+        this.db  // Pass database instance for dynamic preset lookup
       );
 
       const createdContext = this.db.createContext(context);

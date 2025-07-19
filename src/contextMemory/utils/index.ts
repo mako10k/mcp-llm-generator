@@ -131,6 +131,7 @@ export function createContext(input: {
 
 /**
  * Creates a context from a personality preset with optional overrides
+ * Supports both static (DEFAULT_PERSONALITY_PRESETS) and dynamic (database) presets
  */
 export function createContextFromPreset(
   presetId: string,
@@ -140,22 +141,42 @@ export function createContextFromPreset(
     maxTokens?: number;
     maxHistoryTokens?: number;
     expiryDays?: number;
-  }
+  },
+  database?: any  // Optional database instance for dynamic preset lookup
 ): Context {
-  const preset = DEFAULT_PERSONALITY_PRESETS[presetId as keyof typeof DEFAULT_PERSONALITY_PRESETS];
-  if (!preset) {
-    throw new Error(`Unknown personality preset: ${presetId}`);
+  // First, try to find in static presets
+  const staticPreset = DEFAULT_PERSONALITY_PRESETS[presetId as keyof typeof DEFAULT_PERSONALITY_PRESETS];
+  
+  if (staticPreset) {
+    return createContext({
+      name,
+      systemPrompt: staticPreset.systemPrompt,
+      personality: staticPreset.defaultPersonality,
+      temperature: overrides?.temperature || staticPreset.defaultSettings.temperature,
+      maxTokens: overrides?.maxTokens || staticPreset.defaultSettings.maxTokens,
+      maxHistoryTokens: overrides?.maxHistoryTokens || staticPreset.defaultSettings.maxHistoryTokens,
+      expiryDays: overrides?.expiryDays || staticPreset.defaultSettings.expiryDays
+    });
   }
 
-  return createContext({
-    name,
-    systemPrompt: preset.systemPrompt,
-    personality: preset.defaultPersonality,
-    temperature: overrides?.temperature || preset.defaultSettings.temperature,
-    maxTokens: overrides?.maxTokens || preset.defaultSettings.maxTokens,
-    maxHistoryTokens: overrides?.maxHistoryTokens || preset.defaultSettings.maxHistoryTokens,
-    expiryDays: overrides?.expiryDays || preset.defaultSettings.expiryDays
-  });
+  // If not found in static presets and database provided, try dynamic presets
+  if (database) {
+    const dynamicPreset = database.getPersonalityPreset(presetId);
+    if (dynamicPreset) {
+      const defaultSettings = dynamicPreset.defaultSettings ? JSON.parse(dynamicPreset.defaultSettings) : {};
+      return createContext({
+        name,
+        systemPrompt: dynamicPreset.systemPrompt,
+        personality: dynamicPreset.defaultPersonality,
+        temperature: overrides?.temperature || defaultSettings.temperature || DEFAULT_VALUES.context.temperature,
+        maxTokens: overrides?.maxTokens || defaultSettings.maxTokens || DEFAULT_VALUES.context.maxTokens,
+        maxHistoryTokens: overrides?.maxHistoryTokens || defaultSettings.maxHistoryTokens || DEFAULT_VALUES.context.maxHistoryTokens,
+        expiryDays: overrides?.expiryDays || defaultSettings.expiryDays || DEFAULT_VALUES.context.expiryDays
+      });
+    }
+  }
+
+  throw new Error(`Unknown personality preset: ${presetId}`);
 }
 
 /**
