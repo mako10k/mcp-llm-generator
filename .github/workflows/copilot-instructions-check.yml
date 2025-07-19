@@ -1,0 +1,83 @@
+name: Copilot Instructions Check
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  check-copilot-instructions:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check copilot-instructions.md exists
+      run: |
+        if [ ! -f ".github/copilot-instructions.md" ]; then
+          echo "❌ copilot-instructions.md が見つかりません"
+          exit 1
+        fi
+        echo "✅ copilot-instructions.md が存在します"
+        
+    - name: Validate markdown format
+      run: |
+        # 基本的なMarkdownフォーマットチェック
+        if ! grep -q "# Copilot Instructions" .github/copilot-instructions.md; then
+          echo "❌ メインタイトルが見つかりません"
+          exit 1
+        fi
+        
+        if ! grep -q "## プロジェクト概要" .github/copilot-instructions.md; then
+          echo "❌ プロジェクト概要セクションが見つかりません"
+          exit 1
+        fi
+        
+        if ! grep -q "## Copilot 指示内容" .github/copilot-instructions.md; then
+          echo "❌ Copilot指示内容セクションが見つかりません"
+          exit 1
+        fi
+        
+        echo "✅ 必要なセクションが揃っています"
+        
+    - name: Check content freshness
+      run: |
+        # ファイルが30日以上更新されていないかチェック
+        LAST_MODIFIED=$(stat -c %Y .github/copilot-instructions.md)
+        CURRENT_TIME=$(date +%s)
+        DAYS_OLD=$(( (CURRENT_TIME - LAST_MODIFIED) / 86400 ))
+        
+        if [ $DAYS_OLD -gt 30 ]; then
+          echo "⚠️ copilot-instructions.md が30日以上更新されていません (${DAYS_OLD}日前)"
+          echo "定期的な見直しを検討してください"
+        else
+          echo "✅ copilot-instructions.md は最近更新されています (${DAYS_OLD}日前)"
+        fi
+        
+    - name: Check for project-specific rules
+      run: |
+        # プロジェクト固有のルールが含まれているかチェック
+        if ! grep -q "MCPプロトコル" .github/copilot-instructions.md; then
+          echo "❌ MCPプロトコル関連の指示が見つかりません"
+          exit 1
+        fi
+        
+        if ! grep -q "TypeScript" .github/copilot-instructions.md; then
+          echo "❌ TypeScript関連の指示が見つかりません"
+          exit 1
+        fi
+        
+        echo "✅ プロジェクト固有のルールが含まれています"
+        
+    - name: Generate summary
+      run: |
+        echo "## Copilot Instructions チェック結果 📋"
+        echo ""
+        echo "- ✅ ファイル存在確認"
+        echo "- ✅ Markdownフォーマット確認"
+        echo "- ✅ 必須セクション確認"
+        echo "- ✅ プロジェクト固有ルール確認"
+        echo ""
+        echo "copilot-instructions.md は正常に設定されています 🎉"

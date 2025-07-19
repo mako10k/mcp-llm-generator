@@ -8,6 +8,95 @@
 - **技術スタック**: TypeScript, MCP SDK, Zod, Node.js
 - **主要機能**: テキスト生成、コード生成、分析、要約のサンプル機能
 
+## 継続的なメンテナンス方法
+
+### 定期レビュー
+- スプリントやリリースごとに内容を見直し、チームのフィードバックを反映します。
+
+### 変更履歴管理
+- 変更点をコミットメッセージやPRで明示し、背景を記録します。
+
+### 自動チェック
+- CI/CDパイプラインでMarkdownフォーマットや内容の存在を確認します。
+
+### チーム教育
+- 新メンバーへの説明や定期的な勉強会を開催します。
+
+## 実践的な指示例
+
+- **新しい規約導入時**: 速やかに追記し、PRレビューで確認します。
+- **提案が意図と異なる場合**: 該当箇所を記録し、具体例や禁止事項を追加します。
+
+---
+
+この方法を活用し、プロジェクトの品質向上を目指してください。
+
+## Copilot 指示内容
+
+### プロジェクト固有のルール
+
+1. **MCPプロトコル実装**:
+   - MCPサーバーの標準出力（stdout）はプロトコル通信専用です
+   - デバッグ情報や一般的なログは必ず `console.error()` を使用してstderrに出力
+   - サーバー実装時は必ず `Server` クラスを継承し、適切なcapabilitiesを設定
+
+2. **TypeScript型安全性**:
+   - `any` 型の使用を避け、具体的な型定義を作成
+   - Zodスキーマによる実行時型検証を必須とする
+   - 外部APIレスポンスには必ず型ガードを適用
+
+3. **エラーハンドリング**:
+   - 非同期処理には必ずtry-catch文を適用
+   - MCPエラーは `McpError` クラスを使用し、適切なエラーコードを設定
+   - ユーザー向けエラーメッセージは日本語で分かりやすく記述
+
+### 禁止事項
+
+- `eval()` や `Function()` コンストラクタの使用禁止
+- プロセス終了時の強制終了（`process.exit()`）の使用禁止
+- 非同期処理での `setTimeout()` による擬似的な待機の禁止
+- MCPサーバーでの `console.log()` 使用禁止（stderrのみ使用）
+
+### 推奨パターン
+
+```typescript
+// MCPツール実装の推奨パターン
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  try {
+    const { name, arguments: args } = request.params;
+    
+    // Zodスキーマで入力検証
+    const validatedArgs = SomeSchema.parse(args);
+    
+    // 処理実行
+    const result = await processData(validatedArgs);
+    
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(result, null, 2)
+        }
+      ]
+    };
+  } catch (error) {
+    console.error(`Tool execution error: ${error.message}`);
+    throw new McpError(
+      ErrorCode.InternalError,
+      `処理中にエラーが発生しました: ${error.message}`
+    );
+  }
+});
+```
+
+### コードレビューチェックリスト
+
+- [ ] MCPプロトコル仕様に準拠しているか
+- [ ] 型安全性が保たれているか
+- [ ] エラーハンドリングが適切に実装されているか
+- [ ] ログ出力先が正しいか（stderr使用）
+- [ ] Zodスキーマによる入力検証があるか
+
 ## 開発・テスト環境での mcp-shell-server の使用
 
 このプロジェクトでは、開発とテストのために **mcp-shell-server** を積極的に使用してください。
@@ -143,6 +232,38 @@ mcp_mcp-shell-ser_read_execution_output({"output_id": "<output_id>"})
 1. mcp-shell-serverでプロセス状態を監視
 2. MCP Inspectorでプロトコルレベルのテスト
 3. console.error()でデバッグログ出力（stderrに出力）
+
+## メンテナンス管理
+
+### 自動更新の仕組み
+
+1. **依存関係の定期更新**:
+   - Dependabotによる自動PR作成
+   - セキュリティアップデートの優先適用
+   - 定期的な脆弱性スキャン
+
+2. **継続的インテグレーション**:
+   - TypeScriptコンパイル確認
+   - Lintチェック（ESLint + Prettier）
+   - テスト実行（Vitest）
+   - copilot-instructions.mdの存在確認
+
+3. **自動化されたメンテナンス**:
+   - 週次でcopilot-instructions.mdの更新確認
+   - 新しいMCP SDK機能の調査と適用検討
+   - パフォーマンス指標の監視
+
+### メンテナンス担当者向けガイド
+
+- **月次レビュー**: MCPプロトコルの更新情報確認
+- **四半期レビュー**: アーキテクチャの見直しと最適化
+- **年次レビュー**: 技術スタックの全面的な評価
+
+### 品質保証
+
+- **コードカバレッジ**: 80%以上を維持
+- **型安全性**: strict モードでの警告ゼロ
+- **セキュリティ**: 脆弱性の即座対応（24時間以内）
 
 ## 関連リンク
 

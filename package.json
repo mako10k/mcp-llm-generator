@@ -23,7 +23,8 @@
     "start": "node build/index.js",
     "dev": "tsx src/index.ts",
     "prepare": "husky",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check:copilot-instructions": "node -e \"const fs = require('fs'); const path = '.github/copilot-instructions.md'; if (!fs.existsSync(path)) { console.error('❌ copilot-instructions.md が見つかりません'); process.exit(1); } const content = fs.readFileSync(path, 'utf8'); if (!content.includes('# Copilot Instructions')) { console.error('❌ 正しいフォーマットではありません'); process.exit(1); } console.log('✅ copilot-instructions.md は正常です');\""
   },
   "keywords": [
     "mcp",
