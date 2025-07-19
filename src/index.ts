@@ -5,26 +5,16 @@
  * This server demonstrates:
  * - Basic MCP server setup using TypeScript SDK
  * - Implementation of a 'sample' tool that uses LLM sampling
- * - Resource// Template execution tool implementation
-server.registerTool(
-  "template-execute",
-  {
-    title: "Template Execution",
-    description: "Execute a predefined template with parameter substitution via LLM text generation",
-    inputSchema: {
-      templateName: z.string().describe("Name of the template to execute"),
-      args: z.record(z.string()).describe("Arguments for template parameter substitution"),
-      maxTokens: z.number().optional().default(500).describe("Maximum tokens to generate"),
-      temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
-      includeContext: z.enum(["none", "thisServer", "allServers"]).optional().default("none").describe("Context inclusion level")
-    }sample configurations
+ * - Resource configurations
  * - Prompt templates for sample operations
+ * - External LLM API integration (OpenAI, Claude)
  */
 
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { ContextMemoryIntegration } from "./contextMemory/index.js";
+import { LLMProviderManager } from "./llm/index.js";
 
 // Template structure definition
 type SampleTemplate = {
@@ -119,6 +109,11 @@ const server = new McpServer({
 
 // Initialize Context Memory System
 const contextMemory = new ContextMemoryIntegration();
+
+// Initialize LLM Provider Manager
+const llmManager = new LLMProviderManager({
+  defaultProvider: 'mcp-internal' // MCPサンプリングをデフォルトに保持
+});
 
 // Sample configurations resource
 server.registerResource(
@@ -709,6 +704,147 @@ server.registerTool(
             error: true,
             message: error instanceof Error ? error.message : "Unknown error",
             templateName,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
+// External LLM API integration tools
+server.registerTool(
+  "external-llm-generate",
+  {
+    title: "External LLM Generation",
+    description: "Generate text using external LLM APIs (OpenAI, Claude, etc.)",
+    inputSchema: {
+      messages: z.array(z.object({
+        role: z.enum(["system", "user", "assistant"]).describe("Message role"),
+        content: z.string().describe("Message content")
+      })).describe("Array of messages for the conversation"),
+      provider: z.string().optional().describe("LLM provider to use (openai, claude)"),
+      model: z.string().optional().describe("Specific model to use"),
+      maxTokens: z.number().optional().default(1000).describe("Maximum tokens to generate"),
+      temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
+      topP: z.number().optional().describe("Top-p sampling parameter"),
+      stop: z.array(z.string()).optional().describe("Stop sequences"),
+      stream: z.boolean().optional().default(false).describe("Enable streaming response")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
+  },
+  async ({ messages, provider, model, maxTokens, temperature, topP, stop, stream }) => {
+    try {
+      if (stream) {
+        // ストリーミングは現在のMCPプロトコルでは未対応
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: "Streaming is not supported in current MCP protocol implementation",
+              provider: provider || 'not specified',
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+      }
+
+      const response = await llmManager.generateMessage(messages, {
+        provider,
+        model,
+        maxTokens,
+        temperature,
+        topP,
+        stop
+      });
+
+      // 使用統計の更新
+      if (provider) {
+        llmManager.trackUsage(provider);
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            provider: provider || 'mcp-internal',
+            model: response.model,
+            content: response.content,
+            usage: response.usage,
+            stopReason: response.stopReason,
+            metadata: {
+              ...response.metadata,
+              timestamp: new Date().toISOString(),
+              external_api: !!provider
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: error instanceof Error ? error.message : "Unknown error",
+            provider: provider || 'not specified',
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
+server.registerTool(
+  "external-llm-providers",
+  {
+    title: "External LLM Providers Info",
+    description: "Get information about available LLM providers and their capabilities",
+    inputSchema: {
+      healthCheck: z.boolean().optional().default(false).describe("Include health check results")
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    }
+  },
+  async ({ healthCheck }) => {
+    try {
+      const providers = llmManager.getProviderInfo();
+      const usageStats = llmManager.getUsageStats();
+      let healthResults: Record<string, boolean> = {};
+
+      if (healthCheck) {
+        healthResults = await llmManager.healthCheckAll();
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            availableProviders: llmManager.getAvailableProviders(),
+            providers: providers.map(provider => ({
+              ...provider,
+              healthy: healthCheck ? healthResults[provider.name] : undefined,
+              usageCount: usageStats[provider.name] || 0
+            })),
+            healthCheck: healthCheck ? healthResults : undefined,
+            usageStats,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: error instanceof Error ? error.message : "Unknown error",
             timestamp: new Date().toISOString()
           }, null, 2)
         }]
