@@ -20,7 +20,11 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:dev": "tsc --outDir build-dev",
+    "build:production": "tsc --outDir build-production",
     "start": "node build/index.js",
+    "start:dev": "node build-dev/index.js",
+    "start:production": "node build-production/index.js",
     "dev": "tsx src/index.ts",
     "prepare": "husky",
     "test": "vitest run",
