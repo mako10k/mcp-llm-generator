@@ -11,6 +11,7 @@ import {
 } from '../types/persona.js';
 import { promptTokenManager } from '../utils/promptOptimization.js';
 import { promptSecurityManager } from '../utils/promptSecurity.js';
+import { PersonaLogger } from './personaLogger.js';
 
 /**
  * 型安全なPersonaCapabilitiesユーティリティ関数
@@ -26,9 +27,11 @@ function safeJoinStringArray(array: string[] | undefined, separator: string = ',
 
 export class PersonaManager {
   private db: Database.Database;
+  private logger: PersonaLogger;
 
   constructor(database: Database.Database) {
     this.db = database;
+    this.logger = PersonaLogger.getInstance();
   }
 
   /**
@@ -54,7 +57,11 @@ export class PersonaManager {
         learning_capabilities: result.learning_capabilities ? JSON.parse(result.learning_capabilities) : undefined
       };
     } catch (error) {
-      console.error('❌ Failed to get persona capabilities:', error);
+      this.logger.error('Failed to get persona capabilities', {
+        method: 'getPersonaCapabilities',
+        operation: 'get_persona_capabilities',
+        metadata: { context_id: contextId }
+      }, error as Error);
       return null;
     }
   }
@@ -80,10 +87,18 @@ export class PersonaManager {
         capabilities.learning_capabilities ? JSON.stringify(capabilities.learning_capabilities) : null
       );
 
-      console.log(`✅ Updated persona capabilities for context ${contextId}`);
+      this.logger.info(`Updated persona capabilities for context ${contextId}`, {
+        method: 'updatePersonaCapabilities',
+        contextId: contextId,
+        operation: 'persona_capabilities_update_success'
+      });
       return true;
     } catch (error) {
-      console.error('❌ Failed to update persona capabilities:', error);
+      this.logger.error('Failed to update persona capabilities', {
+        method: 'updatePersonaCapabilities',
+        operation: 'update_persona_capabilities',
+        metadata: { context_id: contextId }
+      }, error as Error);
       return false;
     }
   }
@@ -103,7 +118,11 @@ export class PersonaManager {
       const permissions = JSON.parse(result.permissions || '[]');
       return permissions.includes(requiredPermission) || permissions.includes('admin');
     } catch (error) {
-      console.error('❌ Failed to check role permissions:', error);
+      this.logger.error('Failed to check role permissions', {
+        method: 'checkRolePermissions',
+        operation: 'check_role_permissions',
+        metadata: { context_id: contextId, required_permission: requiredPermission }
+      }, error as Error);
       return false;
     }
   }
@@ -112,9 +131,55 @@ export class PersonaManager {
    * タスク委譲の作成
    */
   createTaskDelegation(delegation: Omit<TaskDelegation, 'delegation_id' | 'created_at' | 'updated_at'>): string | null {
+    const methodName = 'createTaskDelegation';
+    const startTime = Date.now();
+    
     try {
+      this.logger.debug('Starting task delegation creation', {
+        method: methodName,
+        operation: 'pre_validation',
+        metadata: {
+          from_context_id: delegation.from_context_id,
+          to_context_id: delegation.to_context_id,
+          task_description: delegation.task_description
+        }
+      });
+
+      // 外部キー制約を事前にチェック（context_idの存在確認）
+      const fromContextExists = this.db.prepare(`
+        SELECT 1 FROM persona_capabilities WHERE context_id = ?
+      `).get(delegation.from_context_id);
+      
+      const toContextExists = this.db.prepare(`
+        SELECT 1 FROM persona_capabilities WHERE context_id = ?
+      `).get(delegation.to_context_id);
+      
+      const checkResults = {
+        from_exists: !!fromContextExists,
+        to_exists: !!toContextExists
+      };
+
+      if (!fromContextExists || !toContextExists) {
+        this.logger.logForeignKeyError(
+          methodName,
+          delegation.from_context_id,
+          delegation.to_context_id,
+          checkResults
+        );
+        return null;
+      }
+
       const delegationId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      this.logger.debug('Foreign key validation passed, creating delegation', {
+        method: methodName,
+        operation: 'database_insert',
+        metadata: {
+          delegation_id: delegationId,
+          foreign_key_check: checkResults
+        }
+      });
+
       const stmt = this.db.prepare(`
         INSERT INTO task_delegations (
           delegation_id, from_context_id, to_context_id, task_description,
@@ -129,13 +194,45 @@ export class PersonaManager {
         delegation.task_description,
         JSON.stringify(delegation.required_capabilities),
         delegation.priority_level,
-        delegation.status // ここでdelegation.statusを使用
+        delegation.status
       );
 
-      console.log(`✅ Created task delegation: ${delegationId}`);
+      this.logger.logDatabaseOperation(
+        methodName,
+        'task_delegation_insert',
+        true,
+        delegationId,
+        {
+          from_context_id: delegation.from_context_id,
+          to_context_id: delegation.to_context_id,
+          priority_level: delegation.priority_level,
+          status: delegation.status
+        }
+      );
+
+      this.logger.logPerformance(methodName, 'task_delegation_creation', startTime, delegationId);
+      
+      this.logger.info(`Created task delegation: ${delegationId}`, {
+        method: methodName,
+        contextId: delegationId,
+        operation: 'task_delegation_creation_success'
+      });
+
       return delegationId;
     } catch (error) {
-      console.error('❌ Failed to create task delegation:', error);
+      this.logger.error(
+        'Failed to create task delegation',
+        {
+          method: methodName,
+          operation: 'task_delegation_creation',
+          metadata: {
+            from_context_id: delegation.from_context_id,
+            to_context_id: delegation.to_context_id,
+            task_description: delegation.task_description
+          }
+        },
+        error as Error
+      );
       return null;
     }
   }
@@ -269,7 +366,15 @@ export class PersonaManager {
       `);
 
       stmt.run(parentContextId, childContextId, relationshipType);
-      console.log(`✅ Recorded persona lineage: ${parentContextId} -> ${childContextId} (${relationshipType})`);
+      this.logger.info(`Recorded persona lineage: ${parentContextId} -> ${childContextId} (${relationshipType})`, {
+        method: 'recordPersonaLineage',
+        contextId: parentContextId,
+        operation: 'persona_lineage_record_success',
+        metadata: {
+          child_context_id: childContextId,
+          relationship_type: relationshipType
+        }
+      });
       return true;
     } catch (error) {
       console.error('❌ Failed to record persona lineage:', error);
@@ -322,7 +427,11 @@ export class PersonaManager {
         });
       })();
 
-      console.log(`✅ Successfully merged personas into ${targetContextId}`);
+      this.logger.info(`Successfully merged personas into ${targetContextId}`, {
+        method: 'mergePersonas',
+        contextId: targetContextId,
+        operation: 'persona_merge_success'
+      });
       return true;
     } catch (error) {
       console.error('❌ Failed to merge personas:', error);
@@ -468,7 +577,15 @@ export class PersonaManager {
         parentLevel + 1
       );
 
-      console.log(`✅ Created role hierarchy: ${parentRoleId || 'root'} -> ${childRoleId}`);
+      this.logger.info(`Created role hierarchy: ${parentRoleId || 'root'} -> ${childRoleId}`, {
+        method: 'createRoleHierarchy',
+        contextId: childRoleId,
+        operation: 'role_hierarchy_creation_success',
+        metadata: {
+          parent_role_id: parentRoleId,
+          role_type: roleType
+        }
+      });
       return true;
     } catch (error) {
       console.error('❌ Failed to create role hierarchy:', error);
@@ -585,7 +702,15 @@ export class PersonaManager {
       });
 
       if (delegationId) {
-        console.log(`✅ Smart delegation created: ${delegationId} -> ${bestCandidate.context_id} (match: ${bestCandidate.capability_score}%)`);
+        this.logger.info(`Smart delegation created: ${delegationId} -> ${bestCandidate.context_id} (match: ${bestCandidate.capability_score}%)`, {
+          method: 'smartTaskDelegation',
+          contextId: delegationId,
+          operation: 'smart_delegation_success',
+          metadata: {
+            target_context_id: bestCandidate.context_id,
+            capability_score: bestCandidate.capability_score
+          }
+        });
       }
 
       return delegationId;

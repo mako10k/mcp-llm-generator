@@ -149,9 +149,17 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
   });
 
   describe('タスク委譲システム', () => {
-    beforeEach(() => {
+    test('タスク委譲の作成', () => {
+      // 必要なコンテキストを作成
       db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('delegator', 'Delegator');
       db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('delegatee', 'Delegatee');
+      
+      // delegatorのpersona_capabilitiesを事前作成
+      personaManager.updatePersonaCapabilities('delegator', {
+        expertise: ['task_delegation', 'project_management'],
+        tools: ['task_tracker', 'project_board'],
+        restrictions: ['delegation_only']
+      });
       
       // 受託者の能力を設定
       personaManager.updatePersonaCapabilities('delegatee', {
@@ -159,9 +167,7 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
         tools: ['jupyter', 'pandas', 'sklearn'],
         restrictions: ['data_privacy']
       });
-    });
 
-    test('タスク委譲の作成', () => {
       const delegationId = personaManager.createTaskDelegation({
         from_context_id: 'delegator',
         to_context_id: 'delegatee',
@@ -176,9 +182,17 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
     });
 
     test('スマート委譲システム', () => {
-      // 複数の候補を設定
+      // 必要なコンテキストを作成（一意のID使用）
+      db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('smart_delegator', 'Smart Delegator');
       db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('candidate1', 'Candidate 1');
       db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('candidate2', 'Candidate 2');
+      
+      // 委譲者のpersona_capabilitiesも設定
+      personaManager.updatePersonaCapabilities('smart_delegator', {
+        expertise: ['project_management'],
+        tools: ['delegation'],
+        restrictions: []
+      });
       
       personaManager.updatePersonaCapabilities('candidate1', {
         expertise: ['python', 'web_development'],
@@ -193,7 +207,7 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
       });
 
       const delegationId = personaManager.smartDelegateTask(
-        'delegator',
+        'smart_delegator',
         '機械学習モデルの開発',
         ['python', 'machine_learning'],
         { priority: 'high', min_capability_match: 70 }
@@ -207,9 +221,26 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
     });
 
     test('委譲状況の監視', () => {
+      // 必要なコンテキストを作成（一意のID使用）
+      db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('monitor_delegator', 'Monitor Delegator');
+      db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('monitor_delegatee', 'Monitor Delegatee');
+      
+      // 両方のコンテキストにpersona_capabilitiesも設定
+      personaManager.updatePersonaCapabilities('monitor_delegator', {
+        expertise: ['management'],
+        tools: ['monitoring'],
+        restrictions: []
+      });
+      
+      personaManager.updatePersonaCapabilities('monitor_delegatee', {
+        expertise: ['python'],
+        tools: ['coding'],
+        restrictions: []
+      });
+      
       const delegationId = personaManager.createTaskDelegation({
-        from_context_id: 'delegator',
-        to_context_id: 'delegatee',
+        from_context_id: 'monitor_delegator',
+        to_context_id: 'monitor_delegatee',
         task_description: 'テストタスク',
         required_capabilities: ['python'],
         priority_level: 'medium',
@@ -315,17 +346,25 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
   });
 
   describe('システム統計', () => {
-    beforeEach(() => {
-      // テストデータの設定
+    test('ペルソナ統計の取得', () => {
+      // テストデータのコンテキストを作成
       db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('stats_test1', 'Stats Test 1');
       db.prepare('INSERT INTO contexts (context_id, name) VALUES (?, ?)').run('stats_test2', 'Stats Test 2');
       
+      // 能力を設定
       personaManager.updatePersonaCapabilities('stats_test1', {
         expertise: ['testing'],
         tools: ['vitest'],
         restrictions: []
       });
       
+      personaManager.updatePersonaCapabilities('stats_test2', {
+        expertise: ['testing'],
+        tools: ['vitest'],
+        restrictions: []
+      });
+      
+      // 委譲を作成
       personaManager.createTaskDelegation({
         from_context_id: 'stats_test1',
         to_context_id: 'stats_test2',
@@ -334,9 +373,7 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
         priority_level: 'low',
         status: 'pending'
       });
-    });
-
-    test('ペルソナ統計の取得', () => {
+      
       const stats = personaManager.getPersonaStatistics();
       
       expect(stats.total_personas).toBeGreaterThan(0);
@@ -354,6 +391,7 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
     });
 
     test('不正な委譲作成のエラーハンドリング', () => {
+      // 存在しないコンテキストIDでの委譲作成は適切にエラーハンドリングされるべき
       const result = personaManager.createTaskDelegation({
         from_context_id: 'nonexistent',
         to_context_id: 'also_nonexistent',
@@ -363,6 +401,7 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
         status: 'pending'
       });
       
+      // 外部キー制約違反により、nullが返されることを期待
       expect(result).toBeNull();
     });
   });
