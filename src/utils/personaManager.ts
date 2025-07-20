@@ -13,6 +13,13 @@ import { promptTokenManager } from '../utils/promptOptimization.js';
 import { promptSecurityManager } from '../utils/promptSecurity.js';
 import { PersonaLogger } from './personaLogger.js';
 
+// 共有メモリツールの型定義
+declare global {
+  var sharedMemoryTools: {
+    handleToolCall(toolName: string, args: any): Promise<{ content: Array<{ type: string; text: string }> }>;
+  } | undefined;
+}
+
 /**
  * 型安全なPersonaCapabilitiesユーティリティ関数
  */
@@ -858,6 +865,198 @@ export class PersonaManager {
     } catch (error) {
       console.error('❌ Failed to rank candidates:', error);
       return [];
+    }
+  }
+
+  /**
+   * 人格側共有メモリ機能: MCPツール連携
+   */
+  async createSharedMemory(contextId: string, title: string, content: string, permissionLevel: 'public' | 'edit' = 'public'): Promise<string | null> {
+    try {
+      // 既存のSharedMemoryMCPToolsの機能を呼び出し
+      if (global.sharedMemoryTools) {
+        const result = await global.sharedMemoryTools.handleToolCall('shared-memory-create', {
+          title,
+          content,
+          creator_persona_id: contextId,  // パラメータ名修正
+          permission_level: permissionLevel
+        });
+        
+        this.logger.info(`Created shared memory for persona ${contextId}`, {
+          method: 'createSharedMemory',
+          contextId: contextId,
+          operation: 'shared_memory_create_success'
+        });
+        
+        return result?.content?.[0]?.text?.match(/ID: ([a-f0-9-]+)/)?.[1] || null;
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to create shared memory', {
+        method: 'createSharedMemory',
+        operation: 'create_shared_memory',
+        metadata: { context_id: contextId }
+      }, error as Error);
+      return null;
+    }
+  }
+
+  async searchSharedMemory(contextId: string, keyword: string): Promise<any[]> {
+    try {
+      if (global.sharedMemoryTools) {
+        const result = await global.sharedMemoryTools.handleToolCall('shared-memory-search', {
+          query: keyword,  // パラメータ名修正
+          requester_persona_id: contextId
+        });
+        
+        // 結果の解析とフォーマット
+        const content = result?.content?.[0]?.text || '[]';
+        const memories = JSON.parse(content);
+        
+        this.logger.info(`Searched shared memory for persona ${contextId}`, {
+          method: 'searchSharedMemory',
+          contextId: contextId,
+          operation: 'shared_memory_search_success',
+          metadata: { result_count: memories.length }
+        });
+        
+        return memories;
+      }
+      return [];
+    } catch (error) {
+      this.logger.error('Failed to search shared memory', {
+        method: 'searchSharedMemory',
+        operation: 'search_shared_memory',
+        metadata: { context_id: contextId }
+      }, error as Error);
+      return [];
+    }
+  }
+
+  async updateSharedMemory(contextId: string, memoryId: string, title?: string, content?: string): Promise<boolean> {
+    try {
+      if (global.sharedMemoryTools) {
+        const updateData: any = { id: memoryId, updater_persona_id: contextId };  // パラメータ名修正: id
+        if (title) updateData.title = title;
+        if (content) updateData.content = content;
+        
+        await global.sharedMemoryTools.handleToolCall('shared-memory-update', updateData);
+        
+        this.logger.info(`Updated shared memory for persona ${contextId}`, {
+          method: 'updateSharedMemory',
+          contextId: contextId,
+          operation: 'shared_memory_update_success'
+        });
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      this.logger.error('Failed to update shared memory', {
+        method: 'updateSharedMemory',
+        operation: 'update_shared_memory',
+        metadata: { context_id: contextId, memory_id: memoryId }
+      }, error as Error);
+      return false;
+    }
+  }
+
+  async deleteSharedMemory(contextId: string, memoryId: string): Promise<boolean> {
+    try {
+      if (global.sharedMemoryTools) {
+        await global.sharedMemoryTools.handleToolCall('shared-memory-delete', {
+          id: memoryId,  // パラメータ名修正: id
+          deleter_persona_id: contextId  // パラメータ名修正
+        });
+        
+        this.logger.info(`Deleted shared memory for persona ${contextId}`, {
+          method: 'deleteSharedMemory',
+          contextId: contextId,
+          operation: 'shared_memory_delete_success'
+        });
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      this.logger.error('Failed to delete shared memory', {
+        method: 'deleteSharedMemory',
+        operation: 'delete_shared_memory',
+        metadata: { context_id: contextId, memory_id: memoryId }
+      }, error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * 人格側BIFF通知: 会話履歴にシステムロールメッセージとして通知を挿入
+   */
+  async insertBiffNotification(contextId: string): Promise<string | null> {
+    try {
+      if (global.sharedMemoryTools) {
+        const result = await global.sharedMemoryTools.handleToolCall('shared-memory-notifications', {
+          persona_id: contextId  // パラメータ名修正: persona_id
+        });
+        
+        const content = result?.content?.[0]?.text || '';
+        
+        if (content && content !== 'No new notifications') {
+          // 通知をシステムロールメッセージ形式でフォーマット
+          const systemMessage = `📬 共有メモリ通知: ${content}`;
+          
+          this.logger.info(`Generated BIFF notification for persona ${contextId}`, {
+            method: 'insertBiffNotification',
+            contextId: contextId,
+            operation: 'biff_notification_success'
+          });
+          
+          return systemMessage;
+        }
+        
+        return null;
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to generate BIFF notification', {
+        method: 'insertBiffNotification',
+        operation: 'biff_notification',
+        metadata: { context_id: contextId }
+      }, error as Error);
+      return null;
+    }
+  }
+
+  /**
+   * 人格用会話履歴にBIFF通知を挿入
+   */
+  async enrichConversationWithBiff(contextId: string, messages: Array<{role: string, content: string}>): Promise<Array<{role: string, content: string}>> {
+    try {
+      const biffNotification = await this.insertBiffNotification(contextId);
+      
+      if (biffNotification) {
+        // 会話履歴の最初にシステムロールメッセージとして挿入
+        const enrichedMessages = [
+          { role: 'system', content: biffNotification },
+          ...messages
+        ];
+        
+        this.logger.info(`Enriched conversation with BIFF notification for persona ${contextId}`, {
+          method: 'enrichConversationWithBiff',
+          contextId: contextId,
+          operation: 'conversation_biff_enrichment_success'
+        });
+        
+        return enrichedMessages;
+      }
+      
+      return messages;
+    } catch (error) {
+      this.logger.error('Failed to enrich conversation with BIFF', {
+        method: 'enrichConversationWithBiff',
+        operation: 'conversation_biff_enrichment',
+        metadata: { context_id: contextId }
+      }, error as Error);
+      return messages;
     }
   }
 }

@@ -11,10 +11,11 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "outDir": "./build",
-    "rootDir": "./src"
+    "rootDir": "./"
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",

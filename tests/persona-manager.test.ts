@@ -31,8 +31,8 @@ describe('Sprint4 Phase 1: ペルソナ管理統合システム', () => {
         db.exec(stmt + ';');
       } catch (error) {
         // トリガーエラーは無視（テスト環境では不要）
-        if (!error.message.includes('incomplete input')) {
-          console.warn('Schema warning:', error.message);
+        if (!(error as Error).message.includes('incomplete input')) {
+          console.warn('Schema warning:', (error as Error).message);
         }
       }
     });

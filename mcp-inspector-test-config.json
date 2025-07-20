@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mcp-sampler": {
+      "command": "node",
+      "args": ["build/src/index.js"]
+    }
+  }
+}
