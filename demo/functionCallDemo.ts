@@ -11,33 +11,44 @@ import { FunctionRegistryManager } from '../build/utils/functionRegistry.js';
 /**
  * メインデモ実行
  */
-async function runFunctionCallDemo() {
-  console.log('🚀 FunctionCall機能実演デモ開始\n');
+async function runDemo() {
+  console.log('🚀 人格間FunctionCall機能デモ開始');
+  console.log('=====================================
+');
 
-  // データベースとコンポーネント初期化
-  const db = new Database(':memory:');
-  await initializeDemo(db);
+  // Demo 1: データ分析
+  await runDataAnalysisDemo();
   
-  const personaManager = new PersonaManager(db);
-  const functionRegistry = new FunctionRegistryManager(db);
-  const dispatcher = new FunctionCallDispatcher(personaManager);
-
-  console.log('✅ システム初期化完了\n');
-
-  // Demo 1: データ分析Function
-  await demonstrateDataAnalysis(personaManager, functionRegistry, dispatcher);
+  console.log('
+' + '='.repeat(50) + '
+');
   
-  // Demo 2: 通知送信Function  
-  await demonstrateNotification(personaManager, functionRegistry, dispatcher);
+  // Demo 2: 通知送信  
+  await runNotificationDemo();
   
-  // Demo 3: システム状態取得Function
-  await demonstrateSystemStatus(personaManager, functionRegistry, dispatcher);
+  console.log('
+' + '='.repeat(50) + '
+');
+  
+  // Demo 3: システム状態取得
+  await runSystemStatusDemo();
+  
+  console.log('
+' + '='.repeat(50) + '
+');
+  
+  // Demo 4: Google検索 (新機能)
+  await runGoogleSearchDemo();
+  
+  console.log('
+' + '='.repeat(50) + '
+');
+  
+  // Demo 5: 権限エラーテスト
+  await runPermissionErrorDemo();
 
-  // Demo 4: 権限エラーの実演
-  await demonstratePermissionError(personaManager, functionRegistry, dispatcher);
-
-  db.close();
-  console.log('\n🎉 デモ完了！人格間FunctionCall機能が正常に動作しています。');
+  console.log('
+🎉 全デモ完了！');
 }
 
 /**
@@ -354,5 +365,81 @@ async function demonstratePermissionError(
   }
 }
 
-// デモ実行
+/**
+ * Demo 4: Google検索Function
+ */
+async function runGoogleSearchDemo(): Promise<void> {
+  console.log('🔍 Demo 4: Google検索Function実行');
+  console.log('====================================');
+
+  const searchPersonaId = 'search_persona_001';
+  const targetPersonaId = 'researcher_persona_001';
+
+  // 検索ペルソナのセットアップ（検索権限付与）
+  await setupPersonaWithCapabilities(searchPersonaId, {
+    expertise: ['information_retrieval'],
+    tools: ['web_search'],
+    restrictions: []
+  });
+
+  await setupPersonaWithCapabilities(targetPersonaId, {
+    expertise: ['research', 'information_analysis'],
+    tools: ['googleSearch', 'data_analysis'],
+    restrictions: []
+  });
+
+  // 検索権限の付与
+  const roleStmt = db.prepare(`
+    UPDATE persona_roles SET permissions = ? WHERE context_id = ?
+  `);
+  roleStmt.run(JSON.stringify(['function_call', 'web_search', 'information_access']), searchPersonaId);
+
+  // Function権限設定
+  functionRegistry.bindFunctionToPersona(targetPersonaId, 'func_google_search');
+
+  const request: FunctionCallRequest = {
+    fromPersonaId: searchPersonaId,
+    toPersonaId: targetPersonaId,
+    functionName: 'googleSearch',
+    parameters: {
+      query: 'TypeScript 最新機能',
+      numResults: 5,
+      language: 'ja',
+      region: 'JP',
+      summaryLength: 'brief'
+    },
+    priority: 'medium'
+  };
+
+  console.log(`🔄 Google検索実行中... クエリ: "${request.parameters.query}"`);
+  
+  const response = await dispatcher.dispatchFunctionCall(request);
+
+  if (response.success) {
+    console.log('✅ Google検索成功！');
+    console.log('🔍 検索結果:');
+    if (response.data && response.data.searchResults) {
+      response.data.searchResults.slice(0, 3).forEach((result: any, index: number) => {
+        console.log(`   ${index + 1}. ${result.title}`);
+        console.log(`      URL: ${result.url}`);
+        console.log(`      要約: ${result.snippet.substring(0, 100)}...`);
+      });
+    }
+    
+    if (response.data && response.data.summary) {
+      console.log(`📝 検索要約: ${response.data.summary}`);
+    }
+    
+    if (response.data && response.data.relatedQueries) {
+      console.log(`🔗 関連検索: ${response.data.relatedQueries.slice(0, 3).join(', ')}`);
+    }
+    
+    console.log(`⏱️  実行時間: ${response.executionTimeMs}ms\n`);
+  } else {
+    console.log('❌ Google検索失敗');
+    console.log(`🔒 エラー: ${response.error}\n`);
+  }
+}
+
+// Demo 実行
 runFunctionCallDemo().catch(console.error);

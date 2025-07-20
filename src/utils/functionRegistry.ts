@@ -323,6 +323,83 @@ export class FunctionRegistryManager {
           updated_at: new Date().toISOString(),
           tags: ['system', 'monitoring', 'status']
         }
+      },
+      {
+        id: 'func_google_search',
+        name: 'googleSearch',
+        description: 'Google検索を実行して情報を取得する',
+        category: 'information_retrieval',
+        parameters: {
+          query: {
+            type: 'string',
+            description: '検索クエリ',
+            required: true
+          },
+          numResults: {
+            type: 'number',
+            description: '取得する検索結果数',
+            required: false,
+            default: 10,
+            validation: {
+              min: 1,
+              max: 50
+            }
+          },
+          language: {
+            type: 'string',
+            description: '検索言語設定',
+            required: false,
+            default: 'ja',
+            validation: {
+              enum: ['ja', 'en', 'es', 'fr', 'de', 'zh']
+            }
+          },
+          region: {
+            type: 'string',
+            description: '検索地域設定',
+            required: false,
+            default: 'JP',
+            validation: {
+              enum: ['JP', 'US', 'GB', 'FR', 'DE', 'CN']
+            }
+          },
+          imageSearch: {
+            type: 'boolean',
+            description: '画像検索モード',
+            required: false,
+            default: false
+          },
+          summaryLength: {
+            type: 'string',
+            description: '検索結果要約の詳細度',
+            required: false,
+            default: 'brief',
+            validation: {
+              enum: ['brief', 'detailed']
+            }
+          }
+        },
+        security: {
+          level: 'public',
+          required_permissions: ['web_search', 'information_access'],
+          audit_required: true
+        },
+        execution: {
+          timeout_ms: 15000,
+          max_retries: 2,
+          background_allowed: true,
+          resource_limits: {
+            memory_mb: 256,
+            cpu_percentage: 30
+          }
+        },
+        metadata: {
+          version: '1.0.0',
+          author: 'system',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          tags: ['search', 'google', 'information', 'web']
+        }
       }
     ];
 

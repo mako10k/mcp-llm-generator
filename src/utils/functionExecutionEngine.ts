@@ -4,6 +4,7 @@
  */
 
 import { PersonaLogger } from './personaLogger.js';
+import { GoogleSearchFunction } from './googleSearchFunction.js';
 import type Database from 'better-sqlite3';
 
 /**
@@ -45,10 +46,12 @@ export interface FunctionExecutionResult {
 export class FunctionExecutionEngine {
   private logger: PersonaLogger;
   private db: Database.Database;
+  private googleSearch: GoogleSearchFunction;
 
   constructor(db: Database.Database) {
     this.db = db;
     this.logger = PersonaLogger.getInstance();
+    this.googleSearch = new GoogleSearchFunction();
   }
 
   /**
@@ -81,6 +84,9 @@ export class FunctionExecutionEngine {
           break;
         case 'getSystemStatus':
           result = await this.executeGetSystemStatus(params);
+          break;
+        case 'googleSearch':
+          result = await this.executeGoogleSearch(params);
           break;
         default:
           throw new Error(`Unknown function: ${params.functionName}`);
@@ -411,6 +417,82 @@ export class FunctionExecutionEngine {
   }
 
   /**
+   * Google検索Function実行
+   */
+  private async executeGoogleSearch(params: FunctionExecutionParams): Promise<any> {
+    const methodName = 'executeGoogleSearch';
+    
+    try {
+      // パラメータ検証
+      const { query, numResults, language, region, imageSearch } = params.parameters;
+      
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        throw new Error('Search query is required');
+      }
+
+      this.logger.debug('Google search execution started', {
+        method: methodName,
+        contextId: params.requestId,
+        operation: 'google_search',
+        metadata: {
+          query,
+          numResults: numResults || 10,
+          language: language || 'ja'
+        }
+      });
+
+      // Google検索実行
+      const searchResult = await this.googleSearch.executeSearch({
+        query: query.trim(),
+        numResults: numResults || 10,
+        language: language || 'ja',
+        region: region || 'JP',
+        imageSearch: imageSearch || false
+      });
+
+      if (searchResult.success) {
+        // 検索結果の要約生成
+        const summary = await this.googleSearch.summarizeSearchResults(
+          searchResult,
+          params.parameters.summaryLength || 'brief'
+        );
+
+        // 関連検索クエリの生成
+        const relatedQueries = this.googleSearch.generateRelatedQueries(query, searchResult);
+
+        return {
+          searchResults: searchResult.results,
+          totalResults: searchResult.totalResults,
+          searchTime: searchResult.searchTime,
+          summary: summary.summary,
+          keyPoints: summary.keyPoints,
+          relatedQueries,
+          metadata: {
+            query,
+            language: language || 'ja',
+            region: region || 'JP',
+            executedAt: new Date().toISOString()
+          }
+        };
+      } else {
+        throw new Error(searchResult.error || 'Google search failed');
+      }
+
+    } catch (error) {
+      this.logger.error('Google search execution failed', {
+        method: methodName,
+        contextId: params.requestId,
+        operation: 'google_search',
+        metadata: {
+          query: params.parameters.query
+        }
+      }, error instanceof Error ? error : new Error(String(error)));
+
+      throw error;
+    }
+  }
+
+  /**
    * メモリ使用量の推定
    */
   private estimateMemoryUsage(functionName: string): number {
@@ -421,6 +503,8 @@ export class FunctionExecutionEngine {
         return 5;  // 5MB
       case 'getSystemStatus':
         return 10; // 10MB
+      case 'googleSearch':
+        return 30; // 30MB
       default:
         return 20; // デフォルト20MB
     }
