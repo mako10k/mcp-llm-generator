@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-07-21
+
+### Added
+- **Security Enhancement**: persona_id validation for shared memory tools
+- Mandatory persona_id parameter validation in shared-memory-create tool
+- Enhanced error handling for empty or invalid persona_id values
+
+### Fixed
+- Prevented unauthorized shared memory operations without valid persona_id
+
 ## [1.0.0] - 2025-07-18
 
 ### Added
@@ -39,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TypeScript 5.x
 - Works with VS Code MCP extension and Claude Desktop
 
-[Unreleased]: https://github.com/mako10k/mcp-llm-generator/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/mako10k/mcp-llm-generator/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/mako10k/mcp-llm-generator/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mako10k/mcp-llm-generator/releases/tag/v1.0.0
