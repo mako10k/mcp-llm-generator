@@ -42,6 +42,15 @@ npm audit                        # Security scan
 - **`context-manage`** - Create, update, and manage AI consultant contexts
 - **`memory-store`** - Store and organize knowledge with associative linking
 
+### 🧪 Experimental Features (v1.3.0+)
+- **`capability-get-self-awareness`** - AI personas recognize their own capabilities (Step3)
+- **`capability-get-other-awareness`** - AI personas observe and evaluate other personas
+- **`capability-process-inheritance`** - Manage capability inheritance between personas
+- **`capability-get-matrix`** - Generate capability matrix for multiple personas
+- **`capability-analyze-hierarchy`** - Analyze capability distribution across persona hierarchies
+
+> ⚠️ **Experimental Notice**: The Step3 capability awareness system is an experimental feature under active development. The interface and functionality may change in future versions.
+
 ### 📚 Smart Resources
 - **`template-list`** - Dynamic discovery of available templates
 - **`template-detail`** - Comprehensive template information with validation

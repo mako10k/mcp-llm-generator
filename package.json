@@ -1,7 +1,7 @@
 {
   "name": "@mako10k/mcp-llm-generator",
-  "version": "1.1.1",
-  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and shared memory collaboration. Features 67% token reduction optimization, personality-driven consultants, and associative memory for enhanced AI workflows.",
+  "version": "1.3.0",
+  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and shared memory collaboration. Features 67% token reduction optimization, personality-driven consultants, associative memory, and experimental Step3 capability awareness system for enhanced AI workflows.",
   "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -36,7 +36,7 @@
     "check:copilot-instructions": "node -e \"const fs = require('fs'); const path = '.github/copilot-instructions.md'; if (!fs.existsSync(path)) { console.error('❌ copilot-instructions.md が見つかりません'); process.exit(1); } const content = fs.readFileSync(path, 'utf8'); if (!content.includes('# Copilot Instructions')) { console.error('❌ 正しいフォーマットではありません'); process.exit(1); } console.log('✅ copilot-instructions.md は正常です');\"",
     "rgf-check": "npx tsc --project tools/tsconfig.json && if [ -f build/tools/rgf-checker.js ]; then mv build/tools/rgf-checker.js build/tools/rgf-checker.cjs; fi && node build/tools/rgf-checker.cjs check .",
     "production:check": "node tools/production-guard.js",
-    "production:update": "echo '🔐 Production Update Process' && echo 'This operation requires explicit user approval.' && echo 'Updating build-production/ with latest build...' && npm run build && cp -r build build-production && echo '✅ Production environment updated'",
+    "production:update": "echo '🔐 Production Update Process' && echo 'This operation requires explicit user approval.' && echo 'Building for production environment...' && npm run build:production && echo '✅ Production environment updated'",
     "precommit": "npm run production:check"
   },
   "keywords": [
