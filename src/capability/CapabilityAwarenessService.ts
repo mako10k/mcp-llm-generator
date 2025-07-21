@@ -55,6 +55,7 @@ export type OtherAwarenessInfo = z.infer<typeof OtherAwarenessInfoSchema>;
 
 export class CapabilityAwarenessService {
   private db: Database.Database;
+  private queries: any = {};
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);
@@ -124,8 +125,6 @@ export class CapabilityAwarenessService {
       `)
     };
   }
-
-  private queries: any = {};
 
   /**
    * Step3-1: 自覚機能実装

@@ -7,6 +7,16 @@
 
 import { z } from 'zod';
 import { CapabilityAwarenessService, SelfAwarenessInfo, OtherAwarenessInfo } from './CapabilityAwarenessService.js';
+import { 
+  MCPToolResponse,
+  SelfAwarenessResponse,
+  OtherAwarenessResponse,
+  InheritanceResponse,
+  CapabilityMatrixResponse,
+  HierarchyAnalysisResponse,
+  createMCPTextResponse,
+  createMCPErrorResponse
+} from '../types/mcp-responses.js';
 
 // MCP tool schema definitions
 const GetSelfAwarenessSchema = z.object({
@@ -73,7 +83,7 @@ export class CapabilityAwarenessMCPTools {
   /**
    * MCP tool execution handler
    */
-  async handleToolCall(toolName: string, args: any): Promise<any> {
+  async handleToolCall(toolName: string, args: any): Promise<MCPToolResponse> {
     try {
       switch (toolName) {
         case 'capability-get-self-awareness':
@@ -96,68 +106,57 @@ export class CapabilityAwarenessMCPTools {
       }
     } catch (error) {
       console.error(`Error in tool ${toolName}:`, error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        tool: toolName,
-        timestamp: new Date().toISOString()
-      };
+      return createMCPErrorResponse(
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
   }
 
-  private async handleGetSelfAwareness(args: any) {
+  private async handleGetSelfAwareness(args: any): Promise<MCPToolResponse> {
     const { context_id } = GetSelfAwarenessSchema.parse(args);
     
     const selfAwareness = await this.service.getSelfAwareness(context_id);
     
-    return {
+    // MCP仕様: text値はJSONパース可能文字列である必要
+    const responseData = {
       success: true,
       tool: 'capability-get-self-awareness',
-      data: selfAwareness,
-      summary: {
-        context_id,
-        hierarchy_depth: selfAwareness.position_in_hierarchy.depth,
-        capabilities_count: {
-          expertise: selfAwareness.own_capabilities.expertise.length,
-          tools: selfAwareness.own_capabilities.tools.length,
-          restrictions: selfAwareness.own_capabilities.restrictions.length
-        },
-        position: {
-          is_root: selfAwareness.position_in_hierarchy.is_root,
-          is_leaf: selfAwareness.position_in_hierarchy.is_leaf,
-          ancestors_count: selfAwareness.position_in_hierarchy.ancestors.length,
-          descendants_count: selfAwareness.position_in_hierarchy.descendants.length
-        }
+      context_id,
+      capabilities_summary: {
+        expertise_count: selfAwareness.own_capabilities.expertise.length,
+        tools_count: selfAwareness.own_capabilities.tools.length,
+        restrictions_count: selfAwareness.own_capabilities.restrictions.length
       },
-      timestamp: new Date().toISOString()
+      hierarchy_position: {
+        depth: selfAwareness.position_in_hierarchy.depth,
+        is_root: selfAwareness.position_in_hierarchy.is_root,
+        is_leaf: selfAwareness.position_in_hierarchy.is_leaf
+      },
+      key_expertise: selfAwareness.own_capabilities.expertise.slice(0, 3)
     };
+    
+    return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleGetOtherAwareness(args: any) {
+  private async handleGetOtherAwareness(args: any): Promise<MCPToolResponse> {
     const { observer_context_id, target_context_id } = GetOtherAwarenessSchema.parse(args);
     
     const otherAwareness = await this.service.getOtherAwareness(observer_context_id, target_context_id);
     
-    return {
+    // MCP仕様: text値はJSONパース可能文字列である必要
+    const responseData = {
       success: true,
       tool: 'capability-get-other-awareness',
-      data: otherAwareness,
-      summary: {
-        observer: observer_context_id,
-        target: target_context_id,
-        relationship: otherAwareness.relationship,
-        observable_capabilities: {
-          expertise: otherAwareness.observable_capabilities.expertise.length,
-          tools: otherAwareness.observable_capabilities.tools.length,
-          restrictions: otherAwareness.observable_capabilities.restrictions.length
-        },
-        has_assessment: !!otherAwareness.assessment
-      },
-      timestamp: new Date().toISOString()
+      observer_context_id,
+      target_context_id,
+      relationship: otherAwareness.relationship,
+      observable_capabilities_count: otherAwareness.observable_capabilities?.expertise?.length || 0
     };
+    
+    return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleProcessInheritance(args: any) {
+  private async handleProcessInheritance(args: any): Promise<MCPToolResponse> {
     const { parent_context_id, child_context_id } = ProcessInheritanceSchema.parse(args);
     
     await this.service.processCapabilityInheritance(parent_context_id, child_context_id);
@@ -165,29 +164,26 @@ export class CapabilityAwarenessMCPTools {
     // Get updated child capabilities after processing
     const updatedChildAwareness = await this.service.getSelfAwareness(child_context_id);
     
-    return {
+    // MCP仕様: text値はJSONパース可能文字列である必要
+    const responseData = {
       success: true,
       tool: 'capability-process-inheritance',
-      data: {
-        parent_context_id,
-        child_context_id,
-        inheritance_completed: true,
-        updated_child_capabilities: updatedChildAwareness.own_capabilities
+      parent_context_id,
+      child_context_id,
+      inheritance_completed: true,
+      inherited_capabilities_count: {
+        expertise: updatedChildAwareness.own_capabilities.expertise.length,
+        tools: updatedChildAwareness.own_capabilities.tools.length,
+        restrictions: updatedChildAwareness.own_capabilities.restrictions.length
       },
-      summary: {
-        inheritance_path: `${parent_context_id} → ${child_context_id}`,
-        inherited_capabilities: {
-          expertise: updatedChildAwareness.own_capabilities.expertise.length,
-          tools: updatedChildAwareness.own_capabilities.tools.length,
-          restrictions: updatedChildAwareness.own_capabilities.restrictions.length
-        },
-        inherited_from_count: updatedChildAwareness.own_capabilities.inherited_from.length
-      },
+      inherited_from_count: updatedChildAwareness.own_capabilities.inherited_from.length,
       timestamp: new Date().toISOString()
     };
+    
+    return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleGetCapabilityMatrix(args: any) {
+  private async handleGetCapabilityMatrix(args: any): Promise<MCPToolResponse> {
     const { context_ids, include_inheritance } = GetCapabilityMatrixSchema.parse(args);
     
     // TODO: Implement multiple persona capability matrix generation
@@ -195,37 +191,37 @@ export class CapabilityAwarenessMCPTools {
     
     const matrix = await this.generateCapabilityMatrix(context_ids, include_inheritance);
     
-    return {
+    // MCP仕様: text値はJSONパース可能文字列である必要
+    const responseData = {
       success: true,
       tool: 'capability-get-matrix',
-      data: matrix,
-      summary: {
-        total_personas: matrix.personas.length,
-        unique_expertise: matrix.statistics.unique_expertise_count,
-        unique_tools: matrix.statistics.unique_tools_count,
-        hierarchy_levels: matrix.statistics.max_depth
-      },
+      total_personas: matrix.personas.length,
+      unique_expertise: matrix.statistics.unique_expertise_count,
+      unique_tools: matrix.statistics.unique_tools_count,
+      hierarchy_levels: matrix.statistics.max_depth,
       timestamp: new Date().toISOString()
     };
+    
+    return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleAnalyzeHierarchy(args: any) {
+  private async handleAnalyzeHierarchy(args: any): Promise<MCPToolResponse> {
     const { root_context_id } = args;
     
     // TODO: Hierarchy analysis and optimization suggestions
     const analysis = await this.analyzeHierarchyStructure(root_context_id);
     
-    return {
+    // MCP仕様: text値はJSONパース可能文字列である必要
+    const responseData = {
       success: true,
       tool: 'capability-analyze-hierarchy',
-      data: analysis,
-      summary: {
-        analyzed_personas: analysis.total_personas,
-        optimization_suggestions: analysis.optimization_suggestions.length,
-        potential_improvements: analysis.potential_improvements.length
-      },
+      analyzed_personas: analysis.total_personas,
+      optimization_suggestions_count: analysis.optimization_suggestions.length,
+      potential_improvements_count: analysis.potential_improvements.length,
       timestamp: new Date().toISOString()
     };
+    
+    return createMCPTextResponse(JSON.stringify(responseData));
   }
 
   private async generateCapabilityMatrix(contextIds?: string[], includeInheritance: boolean = true) {

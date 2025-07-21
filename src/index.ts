@@ -988,7 +988,12 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
       }
     },
     async (args: any) => {
-      return await capabilityTools.handleToolCall("capability-get-self-awareness", args);
+      const result = await capabilityTools.handleToolCall("capability-get-self-awareness", args);
+      // MCP SDK CallToolResult形式に変換
+      return {
+        content: result.content,
+        isError: result.isError
+      };
     }
   );
 
@@ -1004,7 +1009,12 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
       }
     },
     async (args: any) => {
-      return await capabilityTools.handleToolCall("capability-get-other-awareness", args);
+      const result = await capabilityTools.handleToolCall("capability-get-other-awareness", args);
+      // MCP SDK CallToolResult形式に変換
+      return {
+        content: result.content,
+        isError: result.isError
+      };
     }
   );
 
@@ -1020,7 +1030,12 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
       }
     },
     async (args: any) => {
-      return await capabilityTools.handleToolCall("capability-process-inheritance", args);
+      const result = await capabilityTools.handleToolCall("capability-process-inheritance", args);
+      // MCP SDK CallToolResult形式に変換
+      return {
+        content: result.content,
+        isError: result.isError
+      };
     }
   );
 
@@ -1036,7 +1051,12 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
       }
     },
     async (args: any) => {
-      return await capabilityTools.handleToolCall("capability-get-matrix", args);
+      const result = await capabilityTools.handleToolCall("capability-get-matrix", args);
+      // MCP SDK CallToolResult形式に変換
+      return {
+        content: result.content,
+        isError: result.isError
+      };
     }
   );
 
@@ -1051,7 +1071,12 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
       }
     },
     async (args: any) => {
-      return await capabilityTools.handleToolCall("capability-analyze-hierarchy", args);
+      const result = await capabilityTools.handleToolCall("capability-analyze-hierarchy", args);
+      // MCP SDK CallToolResult形式に変換
+      return {
+        content: result.content,
+        isError: result.isError
+      };
     }
   );
 }
