@@ -39,6 +39,15 @@ export class SharedMemoryToolsManager {
 export async function createSharedMemoryTool(memoryCore, args) {
     try {
         console.log(`[SharedMemory] Creating memory: ${args.title}`);
+        // 基本的な存在性チェック（空文字列・null・undefined の防止）
+        if (!args.creator_persona_id || args.creator_persona_id.trim() === '') {
+            return {
+                content: [{
+                        type: 'text',
+                        text: `❌ エラー: creator_persona_id が指定されていません。`
+                    }]
+            };
+        }
         // Zodスキーマで入力検証
         const validatedData = CreateMemoryRequestSchema.parse({
             title: args.title,
