@@ -1,11 +1,15 @@
 /**
- * 簡易共有メモリMCPツール実装
+ * 共有メモリMCPツール実装（ベストプラクティスパターン）
  * SharedMemoryCoreを使用したMCPプロトコル対応層
+ * 
+ * 🟢 ベストプラクティス: server.registerTool()を使用する設計
+ * - 各ツールを個別の関数として実装
+ * - 統一されたエラーハンドリング
+ * - contextMemoryツールと同様のパターン
  */
 
 import { z } from 'zod';
 import Database from 'better-sqlite3';
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { 
   SharedMemoryCore,
   CreateMemoryRequestSchema,
@@ -14,10 +18,10 @@ import {
 } from '../core/shared-memory-core.js';
 
 /**
- * 共有メモリMCPツール群の定義
- * SharedMemoryCoreを使用したMCPインターフェース層
+ * 共有メモリMCPツール管理クラス
+ * ベストプラクティス: ツール登録とビジネスロジックの橋渡し役
  */
-export class SharedMemoryMCPTools {
+export class SharedMemoryToolsManager {
   private memoryCore: SharedMemoryCore;
 
   constructor(database: Database.Database) {
@@ -25,314 +29,175 @@ export class SharedMemoryMCPTools {
   }
 
   /**
-   * MCP Toolsリストの取得
+   * SharedMemoryCoreインスタンスの取得
+   * 個別ツール関数からアクセスするため
    */
-  getTools(): Tool[] {
-    return [
-      {
-        name: 'shared-memory-create',
-        description: 'Create a new shared memory item for team collaboration.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            title: {
-              type: 'string',
-              description: 'Title of the memory item',
-              minLength: 1,
-              maxLength: 200
-            },
-            content: {
-              type: 'string',
-              description: 'Content of the memory item',
-              maxLength: 10000
-            },
-            permission_level: {
-              type: 'string',
-              enum: ['public', 'edit'],
-              default: 'edit',
-              description: 'Access permission: public=read-only, edit=editable by anyone'
-            },
-            creator_persona_id: {
-              type: 'string',
-              description: 'ID of the creating persona'
-            }
-          },
-          required: ['title', 'content', 'creator_persona_id'],
-          additionalProperties: false
-        }
-      },
-      {
-        name: 'shared-memory-search',
-        description: 'Search shared memory items by title or content.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            query: {
-              type: 'string',
-              description: 'Search keyword to find in title or content'
-            },
-            limit: {
-              type: 'number',
-              default: 10,
-              minimum: 1,
-              maximum: 50,
-              description: 'Maximum number of results to return'
-            },
-            offset: {
-              type: 'number',
-              default: 0,
-              minimum: 0,
-              description: 'Number of results to skip for pagination'
-            },
-            requester_persona_id: {
-              type: 'string',
-              description: 'ID of the requesting persona'
-            }
-          },
-          required: ['requester_persona_id'],
-          additionalProperties: false
-        }
-      },
-      {
-        name: 'shared-memory-get',
-        description: 'Get detailed information of a specific shared memory item.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'ID of the memory item to retrieve'
-            },
-            requester_persona_id: {
-              type: 'string',
-              description: 'ID of the requesting persona'
-            }
-          },
-          required: ['id', 'requester_persona_id'],
-          additionalProperties: false
-        }
-      },
-      {
-        name: 'shared-memory-update',
-        description: 'Update a shared memory item. Only editable items or owned items can be updated.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'ID of the memory item to update'
-            },
-            title: {
-              type: 'string',
-              description: 'New title (optional)',
-              minLength: 1,
-              maxLength: 200
-            },
-            content: {
-              type: 'string',
-              description: 'New content (optional)',
-              maxLength: 10000
-            },
-            permission_level: {
-              type: 'string',
-              enum: ['public', 'edit'],
-              description: 'New access permission (optional)'
-            },
-            updater_persona_id: {
-              type: 'string',
-              description: 'ID of the updating persona'
-            }
-          },
-          required: ['id', 'updater_persona_id'],
-          additionalProperties: false
-        }
-      },
-      {
-        name: 'shared-memory-delete',
-        description: 'Delete a shared memory item. Only the owner can delete the item.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'ID of the memory item to delete'
-            },
-            deleter_persona_id: {
-              type: 'string',
-              description: 'ID of the deleting persona'
-            }
-          },
-          required: ['id', 'deleter_persona_id'],
-          additionalProperties: false
-        }
-      },
-      {
-        name: 'shared-memory-notifications',
-        description: 'Get recent change notifications for shared memory items.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'number',
-              default: 10,
-              minimum: 1,
-              maximum: 50,
-              description: 'Maximum number of notifications to return'
-            },
-            persona_id: {
-              type: 'string',
-              description: 'ID of the persona requesting notifications'
-            }
-          },
-          required: ['persona_id'],
-          additionalProperties: false
-        }
-      }
-    ];
+  getMemoryCore(): SharedMemoryCore {
+    return this.memoryCore;
   }
 
   /**
-   * MCP Tool実行ハンドラー
+   * データベース接続のクリーンアップ
    */
-  async handleToolCall(name: string, args: any): Promise<any> {
-    try {
-      // System Architect指導: リクエストペイロードをログ出力
-      console.log(`[MCP DEBUG] Tool: ${name}`);
-      console.log(`[MCP DEBUG] Received payload:`, JSON.stringify(args, null, 2));
-      
-      switch (name) {
-        case 'shared-memory-create':
-          return await this.handleCreate(args);
-        
-        case 'shared-memory-search':
-          return await this.handleSearch(args);
-        
-        case 'shared-memory-get':
-          return await this.handleGet(args);
-        
-        case 'shared-memory-update':
-          return await this.handleUpdate(args);
-        
-        case 'shared-memory-delete':
-          return await this.handleDelete(args);
-        
-        case 'shared-memory-notifications':
-          return await this.handleNotifications(args);
-        
-        default:
-          return {
-            isError: true,
-            content: [{ 
-              type: 'text', 
-              text: `Unknown shared memory tool: ${name}` 
-            }]
-          };
-      }
-    } catch (error) {
-      console.error(`Shared memory tool error (${name}):`, error);
+  close(): void {
+    this.memoryCore.close();
+  }
+}
+
+/**
+ * 共有メモリ作成ツール実装
+ * ベストプラクティス: 統一されたエラーハンドリングと結果形式
+ */
+export async function createSharedMemoryTool(
+  memoryCore: SharedMemoryCore,
+  args: {
+    title: string;
+    content: string;
+    permission_level?: 'public' | 'edit';
+    creator_persona_id: string;
+  }
+) {
+  try {
+    console.log(`[SharedMemory] Creating memory: ${args.title}`);
+
+    // 基本的な存在性チェック（空文字列・null・undefined の防止）
+    if (!args.creator_persona_id || args.creator_persona_id.trim() === '') {
       return {
-        isError: true,
-        content: [{ 
-          type: 'text', 
-          text: `Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        content: [{
+          type: 'text',
+          text: `❌ エラー: creator_persona_id が指定されていません。`
         }]
       };
     }
-  }
 
-  private async handleCreate(args: any) {
-    try {
-      // Zodスキーマで入力検証
-      const validatedData = CreateMemoryRequestSchema.parse({
-        title: args.title,
-        content: args.content,
-        permission_level: args.permission_level || 'edit',
-        creator_persona_id: args.creator_persona_id
-      });
+    // Zodスキーマで入力検証
+    const validatedData = CreateMemoryRequestSchema.parse({
+      title: args.title,
+      content: args.content,
+      permission_level: args.permission_level || 'edit',
+      creator_persona_id: args.creator_persona_id
+    });
 
-      const result = this.memoryCore.createMemory(validatedData);
+    const result = memoryCore.createMemory(validatedData);
 
-      if (result.success) {
-        return {
-          content: [{
-            type: 'text',
-            text: `✅ 共有メモ「${validatedData.title}」を作成しました。\nID: ${result.data?.id}\n権限: ${validatedData.permission_level}`
-          }]
-        };
-      } else {
-        return {
-          isError: true,
-          content: [{
-            type: 'text',
-            text: `❌ メモ作成に失敗しました: ${result.error}`
-          }]
-        };
-      }
-    } catch (error) {
+    if (result.success) {
+      return {
+        content: [{
+          type: 'text',
+          text: `✅ 共有メモ「${validatedData.title}」を作成しました。\nID: ${result.data?.id}\n権限: ${validatedData.permission_level}`
+        }]
+      };
+    } else {
       return {
         isError: true,
         content: [{
           type: 'text',
-          text: `❌ 入力データの検証に失敗しました: ${error instanceof z.ZodError ? error.message : String(error)}`
+          text: `❌ メモ作成に失敗しました: ${result.error}`
         }]
       };
     }
+  } catch (error) {
+    console.error('Shared memory create error:', error);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: `❌ 入力データの検証に失敗しました: ${error instanceof z.ZodError ? error.message : String(error)}`
+      }]
+    };
   }
+}
 
-  private async handleSearch(args: any) {
-    try {
-      // Zodスキーマで入力検証
-      const validatedData = SearchMemoryRequestSchema.parse({
-        query: args.query,
-        limit: args.limit || 10,
-        offset: args.offset || 0
-      });
+/**
+ * 共有メモリ検索ツール実装
+ */
+export async function searchSharedMemoryTool(
+  memoryCore: SharedMemoryCore,
+  args: {
+    query?: string;
+    limit?: number;
+    offset?: number;
+    requester_persona_id: string;
+  }
+) {
+  try {
+    console.log(`[SharedMemory] Searching memories: ${args.query || 'all'}`);
 
-      const result = this.memoryCore.searchMemories(
-        validatedData,
-        args.requester_persona_id
-      );
+    // Zodスキーマで入力検証
+    const validatedData = SearchMemoryRequestSchema.parse({
+      query: args.query,
+      limit: args.limit || 10,
+      offset: args.offset || 0
+    });
 
-      if (result.success && result.data?.memories) {
-        const memoriesText = result.data.memories.map((memory: any) => 
-          `📝 **${memory.title}**\n` +
-          `   ID: ${memory.id}\n` +
-          `   作成者: ${memory.owner_persona_id}\n` +
-          `   権限: ${memory.permission_level}\n` +
-          `   更新: ${memory.updated_at}\n` +
-          `   内容: ${memory.content.slice(0, 100)}${memory.content.length > 100 ? '...' : ''}\n`
-        ).join('\n');
+    const result = memoryCore.searchMemories(
+      validatedData,
+      args.requester_persona_id
+    );
 
-        return {
-          content: [{
-            type: 'text',
-            text: result.data.memories.length > 0 
-              ? `🔍 検索結果 (${result.data.memories.length}/${result.data.total}件)\n\n${memoriesText}`
-              : `🔍 検索結果: 該当するメモが見つかりませんでした。`
-          }]
-        };
-      } else {
-        return {
-          isError: true,
-          content: [{
-            type: 'text',
-            text: `❌ 検索に失敗しました: ${result.error}`
-          }]
-        };
-      }
-    } catch (error) {
+    if (result.success && result.data?.memories) {
+      const memoriesText = result.data.memories.map((memory: any) => 
+        `📝 **${memory.title}**\n` +
+        `   ID: ${memory.id}\n` +
+        `   作成者: ${memory.owner_persona_id}\n` +
+        `   権限: ${memory.permission_level}\n` +
+        `   更新: ${memory.updated_at}\n` +
+        `   内容: ${memory.content.slice(0, 100)}${memory.content.length > 100 ? '...' : ''}\n`
+      ).join('\n');
+
+      return {
+        content: [{
+          type: 'text',
+          text: result.data.memories.length > 0 
+            ? `🔍 検索結果 (${result.data.memories.length}/${result.data.total}件)\n\n${memoriesText}`
+            : `🔍 検索結果: 該当するメモが見つかりませんでした。`
+        }]
+      };
+    } else {
       return {
         isError: true,
         content: [{
           type: 'text',
-          text: `❌ 入力データの検証に失敗しました: ${error instanceof z.ZodError ? error.message : String(error)}`
+          text: `❌ 検索に失敗しました: ${result.error}`
         }]
       };
     }
+  } catch (error) {
+    console.error('Shared memory search error:', error);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: `❌ 入力データの検証に失敗しました: ${error instanceof z.ZodError ? error.message : String(error)}`
+      }]
+    };
   }
+}
 
-  private async handleGet(args: any) {
-    const result = this.memoryCore.getMemory(args.id, args.requester_persona_id);
+/**
+ * 共有メモリ取得ツール実装
+ */
+export async function getSharedMemoryTool(
+  memoryCore: SharedMemoryCore,
+  args: {
+    id: string;
+    requester_persona_id: string;
+  }
+) {
+  try {
+    console.log(`[SharedMemory] Getting memory: ${args.id}`);
+
+    // 基本的な存在性チェック
+    if (!args.requester_persona_id || args.requester_persona_id.trim() === '') {
+      return {
+        content: [{
+          type: 'text',
+          text: `❌ エラー: requester_persona_id が指定されていません。`
+        }]
+      };
+    }
+
+    const result = memoryCore.getMemory(args.id, args.requester_persona_id);
 
     if (result.success && result.data) {
       const memory = result.data;
@@ -359,10 +224,45 @@ export class SharedMemoryMCPTools {
         }]
       };
     }
+  } catch (error) {
+    console.error('Shared memory get error:', error);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: `❌ メモ取得中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }]
+    };
   }
+}
 
-  private async handleUpdate(args: any) {
-    const result = this.memoryCore.updateMemory(
+/**
+ * 共有メモリ更新ツール実装
+ */
+export async function updateSharedMemoryTool(
+  memoryCore: SharedMemoryCore,
+  args: {
+    id: string;
+    title?: string;
+    content?: string;
+    permission_level?: 'public' | 'edit';
+    updater_persona_id: string;
+  }
+) {
+  try {
+    console.log(`[SharedMemory] Updating memory: ${args.id}`);
+
+    // 基本的な存在性チェック
+    if (!args.updater_persona_id || args.updater_persona_id.trim() === '') {
+      return {
+        content: [{
+          type: 'text',
+          text: `❌ エラー: updater_persona_id が指定されていません。`
+        }]
+      };
+    }
+
+    const result = memoryCore.updateMemory(
       {
         id: args.id,
         title: args.title,
@@ -388,10 +288,32 @@ export class SharedMemoryMCPTools {
         }]
       };
     }
+  } catch (error) {
+    console.error('Shared memory update error:', error);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: `❌ メモ更新中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }]
+    };
   }
+}
 
-  private async handleDelete(args: any) {
-    const result = this.memoryCore.deleteMemory(args.id, args.deleter_persona_id);
+/**
+ * 共有メモリ削除ツール実装
+ */
+export async function deleteSharedMemoryTool(
+  memoryCore: SharedMemoryCore,
+  args: {
+    id: string;
+    deleter_persona_id: string;
+  }
+) {
+  try {
+    console.log(`[SharedMemory] Deleting memory: ${args.id}`);
+
+    const result = memoryCore.deleteMemory(args.id, args.deleter_persona_id);
 
     if (result.success) {
       return {
@@ -409,10 +331,32 @@ export class SharedMemoryMCPTools {
         }]
       };
     }
+  } catch (error) {
+    console.error('Shared memory delete error:', error);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: `❌ メモ削除中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }]
+    };
   }
+}
 
-  private async handleNotifications(args: any) {
-    const result = this.memoryCore.getRecentNotifications(
+/**
+ * 共有メモリ通知取得ツール実装
+ */
+export async function getSharedMemoryNotificationsTool(
+  memoryCore: SharedMemoryCore,
+  args: {
+    persona_id: string;
+    limit?: number;
+  }
+) {
+  try {
+    console.log(`[SharedMemory] Getting notifications for: ${args.persona_id}`);
+
+    const result = memoryCore.getRecentNotifications(
       args.persona_id,
       args.limit || 10
     );
@@ -442,5 +386,14 @@ export class SharedMemoryMCPTools {
         }]
       };
     }
+  } catch (error) {
+    console.error('Shared memory notifications error:', error);
+    return {
+      isError: true,
+      content: [{
+        type: 'text',
+        text: `❌ 通知取得中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }]
+    };
   }
 }

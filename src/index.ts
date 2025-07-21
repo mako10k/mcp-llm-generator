@@ -13,8 +13,11 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+
 import { ContextMemoryIntegration } from "./contextMemory/index.js";
 import { LLMProviderManager } from "./llm/index.js";
+import { registerSharedMemoryTools } from "./tools/shared-memory-integration-v2.js";
+import Database from 'better-sqlite3';
 
 // Template structure definition
 type SampleTemplate = {
@@ -114,6 +117,9 @@ const contextMemory = new ContextMemoryIntegration();
 const llmManager = new LLMProviderManager({
   defaultProvider: 'mcp-internal' // MCPサンプリングをデフォルトに保持
 });
+
+// Global variable for shared memory manager
+let sharedMemoryManager: any = null;
 
 // Sample configurations resource
 server.registerResource(
@@ -971,6 +977,15 @@ async function main() {
     // Initialize templates file
     await initializeTemplatesFile();
     
+    // Shared Memory Tools Registration
+    try {
+      const sharedMemoryDb = new Database('data/shared-memory.db');
+      sharedMemoryManager = registerSharedMemoryTools(server, sharedMemoryDb);
+      console.log('✅ Shared memory tools registered (6 tools)');
+    } catch (error) {
+      console.error('❌ Failed to register shared memory tools:', error);
+    }
+    
     // Initialize Context Memory System with LLM sampling capability
     await contextMemory.initialize(server as any, async (messages, options) => {
       return await server.server.createMessage({ messages, ...options });
@@ -989,12 +1004,18 @@ async function main() {
 process.on('SIGINT', () => {
   console.error("Shutting down MCP Sampler Server...");
   contextMemory.close();
+  if (sharedMemoryManager) {
+    sharedMemoryManager.close();
+  }
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error("Shutting down MCP Sampler Server...");
   contextMemory.close();
+  if (sharedMemoryManager) {
+    sharedMemoryManager.close();
+  }
   process.exit(0);
 });
 

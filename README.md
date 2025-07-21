@@ -259,6 +259,14 @@ This project uses SQLite databases containing sensitive data including consultan
 - **Contains**: 12+ consultant personalities, conversation data, memory associations
 - **Risk**: Loss of these files means losing valuable AI consultant expertise
 
+#### 🤝 Shared Memory Security Considerations
+- **Personal Environment**: Shared memory tools are designed for individual development environments
+- **PC Access Control**: Anyone with access to your PC can read/modify shared memories
+- **Context Sharing**: If you share your PC, remember that Copilot conversation histories are also accessible
+- **Data Sensitivity**: Avoid storing confidential information in shared memories - use for development notes and ideas only
+- **persona_id Validation**: Basic existence checks prevent empty IDs but do not provide authentication
+- **Recommendation**: For team collaboration with sensitive data, use dedicated collaboration tools with proper access controls
+
 #### 🔧 Secure Development Setup
 ```bash
 # Install with automatic security hooks

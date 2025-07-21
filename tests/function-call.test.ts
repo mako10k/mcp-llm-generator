@@ -5,9 +5,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
-import { PersonaManager } from '../build/utils/personaManager.js';
-import { FunctionCallDispatcher, FunctionCallRequest } from '../build/utils/functionCallDispatcher.js';
-import { FunctionRegistryManager } from '../build/utils/functionRegistry.js';
+import { PersonaManager } from '../src/utils/personaManager.js';
+import { FunctionCallDispatcher, type FunctionCallRequest } from '../src/utils/functionCallDispatcher.js';
+import { FunctionRegistryManager } from '../src/utils/functionRegistry.js';
 
 describe('Sprint4 Phase 2: 人格間FunctionCall機能', () => {
   let db: Database.Database;

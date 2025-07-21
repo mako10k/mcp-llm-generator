@@ -148,7 +148,7 @@ export class SharedMemoryCore {
       this.insertNotification(
         memoryId,
         validatedData.title,
-        'create', // 修正: 通知タイプを正しい値に変更
+        'created', // テスト仕様に合わせて修正
         'メモリが作成されました。',
         validatedData.creator_persona_id
       );

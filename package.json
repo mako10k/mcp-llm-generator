@@ -1,15 +1,16 @@
 {
   "name": "@mako10k/mcp-llm-generator",
-  "version": "1.0.1",
-  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and intelligent template systems. Features 67% token reduction optimization, personality-driven consultants, and associative memory for enhanced AI workflows.",
+  "version": "1.1.0",
+  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and shared memory collaboration. Features 67% token reduction optimization, personality-driven consultants, and associative memory for enhanced AI workflows.",
   "type": "module",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
   "bin": {
-    "mcp-llm-generator": "build/index.js"
+    "mcp-llm-generator": "build/src/index.js"
   },
   "files": [
     "build/",
+    "build-production/",
     "templates/templates.json.sample",
     "README.md",
     "LICENSE"
