@@ -1,0 +1,193 @@
+{
+  "statistics": {
+    "detectionDate": "2025-07-21T09:59:05.264Z",
+    "formats": {
+      "typescript": {
+        "sources": {
+          "src/tools/shared-memory-tools.ts": {
+            "lines": 378,
+            "tokens": 2541,
+            "sources": 1,
+            "clones": 3,
+            "duplicatedLines": 378,
+            "duplicatedTokens": 2541,
+            "percentage": 100,
+            "percentageTokens": 100,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tools/shared-memory-simple.ts": {
+            "lines": 436,
+            "tokens": 3073,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tools/shared-memory-mcp-tools.ts": {
+            "lines": 398,
+            "tokens": 2673,
+            "sources": 1,
+            "clones": 3,
+            "duplicatedLines": 378,
+            "duplicatedTokens": 2541,
+            "percentage": 94.97,
+            "percentageTokens": 95.06,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tools/shared-memory-integration-v2.ts": {
+            "lines": 219,
+            "tokens": 1543,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          }
+        },
+        "total": {
+          "lines": 1431,
+          "tokens": 9830,
+          "sources": 4,
+          "clones": 3,
+          "duplicatedLines": 378,
+          "duplicatedTokens": 2541,
+          "percentage": 26.42,
+          "percentageTokens": 25.85,
+          "newDuplicatedLines": 0,
+          "newClones": 0
+        }
+      }
+    },
+    "total": {
+      "lines": 1431,
+      "tokens": 9830,
+      "sources": 4,
+      "clones": 3,
+      "duplicatedLines": 378,
+      "duplicatedTokens": 2541,
+      "percentage": 26.42,
+      "percentageTokens": 25.85,
+      "newDuplicatedLines": 0,
+      "newClones": 0
+    }
+  },
+  "duplicates": [
+    {
+      "format": "typescript",
+      "lines": 190,
+      "fragment": "/**\n * 共有メモリMCPツール実装（ベストプラクティスパターン）\n * SharedMemoryCoreを使用したMCPプロトコル対応層\n * \n * 🟢 ベストプラクティス: server.registerTool()を使用する設計\n * - 各ツールを個別の関数として実装\n * - 統一されたエラーハンドリング\n * - contextMemoryツールと同様のパターン\n */\n\nimport { z } from 'zod';\nimport Database from 'better-sqlite3';\nimport { \n  SharedMemoryCore,\n  CreateMemoryRequestSchema,\n  UpdateMemoryRequestSchema,\n  SearchMemoryRequestSchema \n} from '../core/shared-memory-core.js';\n\n/**\n * 共有メモリMCPツール管理クラス\n * ベストプラクティス: ツール登録とビジネスロジックの橋渡し役\n */\nexport class SharedMemoryToolsManager {\n  private memoryCore: SharedMemoryCore;\n\n  constructor(database: Database.Database) {\n    this.memoryCore = new SharedMemoryCore(database);\n  }\n\n  /**\n   * SharedMemoryCoreインスタンスの取得\n   * 個別ツール関数からアクセスするため\n   */\n  getMemoryCore(): SharedMemoryCore {\n    return this.memoryCore;\n  }\n\n  /**\n   * データベース接続のクリーンアップ\n   */\n  close(): void {\n    this.memoryCore.close();\n  }\n}\n\n/**\n * 共有メモリ作成ツール実装\n * ベストプラクティス: 統一されたエラーハンドリングと結果形式\n */\nexport async function createSharedMemoryTool(\n  memoryCore: SharedMemoryCore,\n  args: {\n    title: string;\n    content: string;\n    permission_level?: 'public' | 'edit';\n    creator_persona_id: string;\n  }\n) {\n  try {\n    console.log(`[SharedMemory] Creating memory: ${args.title}`);\n\n    // 基本的な存在性チェック（空文字列・null・undefined の防止）\n    if (!args.creator_persona_id || args.creator_persona_id.trim() === '') {\n      return {\n        content: [{\n          type: 'text',\n          text: `❌ エラー: creator_persona_id が指定されていません。`\n        }]\n      };\n    }\n\n    // Zodスキーマで入力検証\n    const validatedData = CreateMemoryRequestSchema.parse({\n      title: args.title,\n      content: args.content,\n      permission_level: args.permission_level || 'edit',\n      creator_persona_id: args.creator_persona_id\n    });\n\n    const result = memoryCore.createMemory(validatedData);\n\n    if (result.success) {\n      return {\n        content: [{\n          type: 'text',\n          text: `✅ 共有メモ「${validatedData.title}」を作成しました。\\nID: ${result.data?.id}\\n権限: ${validatedData.permission_level}`\n        }]\n      };\n    } else {\n      return {\n        isError: true,\n        content: [{\n          type: 'text',\n          text: `❌ メモ作成に失敗しました: ${result.error}`\n        }]\n      };\n    }\n  } catch (error) {\n    console.error('Shared memory create error:', error);\n    return {\n      isError: true,\n      content: [{\n        type: 'text',\n        text: `❌ 入力データの検証に失敗しました: ${error instanceof z.ZodError ? error.message : String(error)}`\n      }]\n    };\n  }\n}\n\n/**\n * 共有メモリ検索ツール実装\n */\nexport async function searchSharedMemoryTool(\n  memoryCore: SharedMemoryCore,\n  args: {\n    query?: string;\n    limit?: number;\n    offset?: number;\n    requester_persona_id: string;\n  }\n) {\n  try {\n    console.log(`[SharedMemory] Searching memories: ${args.query || 'all'}`);\n\n    // Zodスキーマで入力検証\n    const validatedData = SearchMemoryRequestSchema.parse({\n      query: args.query,\n      limit: args.limit || 10,\n      offset: args.offset || 0\n    });\n\n    const result = memoryCore.searchMemories(\n      validatedData,\n      args.requester_persona_id\n    );\n\n    if (result.success && result.data?.memories) {\n      const memoriesText = result.data.memories.map((memory: any) => \n        `📝 **${memory.title}**\\n` +\n        `   ID: ${memory.id}\\n` +\n        `   作成者: ${memory.owner_persona_id}\\n` +\n        `   権限: ${memory.permission_level}\\n` +\n        `   更新: ${memory.updated_at}\\n` +\n        `   内容: ${memory.content.slice(0, 100)}${memory.content.length > 100 ? '...' : ''}\\n`\n      ).join('\\n');\n\n      return {\n        content: [{\n          type: 'text',\n          text: result.data.memories.length > 0 \n            ? `🔍 検索結果 (${result.data.memories.length}/${result.data.total}件)\\n\\n${memoriesText}`\n            : `🔍 検索結果: 該当するメモが見つかりませんでした。`\n        }]\n      };\n    } else {\n      return {\n        isError: true,\n        content: [{\n          type: 'text',\n          text: `❌ 検索に失敗しました: ${result.error}`\n        }]\n      };\n    }\n  } catch (error) {\n    console.error('Shared memory search error:', error);\n    return {\n      isError: true,\n      content: [{\n        type: 'text',\n        text: `❌ 入力データの検証に失敗しました: ${error instanceof z.ZodError ? error.message : String(error)}`\n      }]\n    };\n  }\n}\n\n/**\n * 共有メモリ取得ツール実装\n */\nexport async function getSharedMemoryTool(\n  memoryCore: SharedMemoryCore,\n  args: {\n    id: string;\n    requester_persona_id: string;\n  }\n) {\n  try {\n    console.log(`[SharedMemory] Getting memory: ${args.id}`);\n\n    // 基本的な存在性チェック",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/tools/shared-memory-mcp-tools.ts",
+        "start": 1,
+        "end": 190,
+        "startLoc": {
+          "line": 1,
+          "column": 1,
+          "position": 0
+        },
+        "endLoc": {
+          "line": 190,
+          "column": 15,
+          "position": 1199
+        }
+      },
+      "secondFile": {
+        "name": "src/tools/shared-memory-tools.ts",
+        "start": 1,
+        "end": 190,
+        "startLoc": {
+          "line": 1,
+          "column": 1,
+          "position": 0
+        },
+        "endLoc": {
+          "line": 190,
+          "column": 6,
+          "position": 1199
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 56,
+      "fragment": "const result = memoryCore.getMemory(args.id, args.requester_persona_id);\n\n    if (result.success && result.data) {\n      const memory = result.data;\n      return {\n        content: [{\n          type: 'text',\n          text: `📝 **${memory.title}**\\n\\n` +\n                `**内容:**\\n${memory.content}\\n\\n` +\n                `**詳細情報:**\\n` +\n                `- ID: ${memory.id}\\n` +\n                `- 作成者: ${memory.owner_persona_id}\\n` +\n                `- 権限: ${memory.permission_level}\\n` +\n                `- 作成日: ${memory.created_at}\\n` +\n                `- 更新日: ${memory.updated_at}\\n` +\n                `- 最終更新者: ${memory.last_updated_by}`\n        }]\n      };\n    } else {\n      return {\n        isError: true,\n        content: [{\n          type: 'text',\n          text: `❌ メモ取得に失敗しました: ${result.error}`\n        }]\n      };\n    }\n  } catch (error) {\n    console.error('Shared memory get error:', error);\n    return {\n      isError: true,\n      content: [{\n        type: 'text',\n        text: `❌ メモ取得中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`\n      }]\n    };\n  }\n}\n\n/**\n * 共有メモリ更新ツール実装\n */\nexport async function updateSharedMemoryTool(\n  memoryCore: SharedMemoryCore,\n  args: {\n    id: string;\n    title?: string;\n    content?: string;\n    permission_level?: 'public' | 'edit';\n    updater_persona_id: string;\n  }\n) {\n  try {\n    console.log(`[SharedMemory] Updating memory: ${args.id}`);\n\n    // 基本的な存在性チェック",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/tools/shared-memory-mcp-tools.ts",
+        "start": 200,
+        "end": 255,
+        "startLoc": {
+          "line": 200,
+          "column": 5,
+          "position": 1265
+        },
+        "endLoc": {
+          "line": 255,
+          "column": 15,
+          "position": 1672
+        }
+      },
+      "secondFile": {
+        "name": "src/tools/shared-memory-tools.ts",
+        "start": 190,
+        "end": 245,
+        "startLoc": {
+          "line": 190,
+          "column": 5,
+          "position": 1199
+        },
+        "endLoc": {
+          "line": 245,
+          "column": 6,
+          "position": 1606
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 135,
+      "fragment": "const result = memoryCore.updateMemory(\n      {\n        id: args.id,\n        title: args.title,\n        content: args.content,\n        permission_level: args.permission_level\n      },\n      args.updater_persona_id\n    );\n\n    if (result.success) {\n      return {\n        content: [{\n          type: 'text',\n          text: `✅ メモを更新しました。\\nID: ${args.id}`\n        }]\n      };\n    } else {\n      return {\n        isError: true,\n        content: [{\n          type: 'text',\n          text: `❌ メモ更新に失敗しました: ${result.error}`\n        }]\n      };\n    }\n  } catch (error) {\n    console.error('Shared memory update error:', error);\n    return {\n      isError: true,\n      content: [{\n        type: 'text',\n        text: `❌ メモ更新中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`\n      }]\n    };\n  }\n}\n\n/**\n * 共有メモリ削除ツール実装\n */\nexport async function deleteSharedMemoryTool(\n  memoryCore: SharedMemoryCore,\n  args: {\n    id: string;\n    deleter_persona_id: string;\n  }\n) {\n  try {\n    console.log(`[SharedMemory] Deleting memory: ${args.id}`);\n\n    const result = memoryCore.deleteMemory(args.id, args.deleter_persona_id);\n\n    if (result.success) {\n      return {\n        content: [{\n          type: 'text',\n          text: `✅ メモを削除しました。\\nID: ${args.id}`\n        }]\n      };\n    } else {\n      return {\n        isError: true,\n        content: [{\n          type: 'text',\n          text: `❌ メモ削除に失敗しました: ${result.error}`\n        }]\n      };\n    }\n  } catch (error) {\n    console.error('Shared memory delete error:', error);\n    return {\n      isError: true,\n      content: [{\n        type: 'text',\n        text: `❌ メモ削除中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`\n      }]\n    };\n  }\n}\n\n/**\n * 共有メモリ通知取得ツール実装\n */\nexport async function getSharedMemoryNotificationsTool(\n  memoryCore: SharedMemoryCore,\n  args: {\n    persona_id: string;\n    limit?: number;\n  }\n) {\n  try {\n    console.log(`[SharedMemory] Getting notifications for: ${args.persona_id}`);\n\n    const result = memoryCore.getRecentNotifications(\n      args.persona_id,\n      args.limit || 10\n    );\n\n    if (result.success && result.data) {\n      const notificationsText = result.data.map((notif: any) => \n        `🔔 ${notif.message}\\n` +\n        `   種別: ${notif.type} | 更新者: ${notif.updated_by}\\n` +\n        `   メモ: ${notif.memory_title} (ID: ${notif.memory_id})\\n` +\n        `   日時: ${notif.timestamp}\\n`\n      ).join('\\n');\n\n      return {\n        content: [{\n          type: 'text',\n          text: result.data.length > 0\n            ? `🔔 最近の通知 (${result.data.length}件)\\n\\n${notificationsText}`\n            : `🔔 最近の通知はありません。`\n        }]\n      };\n    } else {\n      return {\n        isError: true,\n        content: [{\n          type: 'text',\n          text: `❌ 通知取得に失敗しました: ${result.error}`\n        }]\n      };\n    }\n  } catch (error) {\n    console.error('Shared memory notifications error:', error);\n    return {\n      isError: true,\n      content: [{\n        type: 'text',\n        text: `❌ 通知取得中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`\n      }]\n    };\n  }\n}",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/tools/shared-memory-mcp-tools.ts",
+        "start": 265,
+        "end": 399,
+        "startLoc": {
+          "line": 265,
+          "column": 5,
+          "position": 1738
+        },
+        "endLoc": {
+          "line": 399,
+          "column": 2,
+          "position": 2673
+        }
+      },
+      "secondFile": {
+        "name": "src/tools/shared-memory-tools.ts",
+        "start": 245,
+        "end": 379,
+        "startLoc": {
+          "line": 245,
+          "column": 5,
+          "position": 1606
+        },
+        "endLoc": {
+          "line": 379,
+          "column": 2,
+          "position": 2541
+        }
+      }
+    }
+  ]
+}
