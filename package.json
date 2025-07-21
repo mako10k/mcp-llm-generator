@@ -33,7 +33,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
-    "check:copilot-instructions": "node -e \"const fs = require('fs'); const path = '.github/copilot-instructions.md'; if (!fs.existsSync(path)) { console.error('❌ copilot-instructions.md が見つかりません'); process.exit(1); } const content = fs.readFileSync(path, 'utf8'); if (!content.includes('# Copilot Instructions')) { console.error('❌ 正しいフォーマットではありません'); process.exit(1); } console.log('✅ copilot-instructions.md は正常です');\""
+    "check:copilot-instructions": "node -e \"const fs = require('fs'); const path = '.github/copilot-instructions.md'; if (!fs.existsSync(path)) { console.error('❌ copilot-instructions.md が見つかりません'); process.exit(1); } const content = fs.readFileSync(path, 'utf8'); if (!content.includes('# Copilot Instructions')) { console.error('❌ 正しいフォーマットではありません'); process.exit(1); } console.log('✅ copilot-instructions.md は正常です');\"",
+    "rgf-check": "npx tsc --project tools/tsconfig.json && if [ -f build/tools/rgf-checker.js ]; then mv build/tools/rgf-checker.js build/tools/rgf-checker.cjs; fi && node build/tools/rgf-checker.cjs check ."
   },
   "keywords": [
     "mcp",
@@ -71,7 +72,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.2.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/js-yaml": "^4.0.9",
     "better-sqlite3": "^12.2.0",
+    "js-yaml": "^4.1.0",
     "tiktoken": "^1.0.21",
     "zod": "^3.22.4"
   },

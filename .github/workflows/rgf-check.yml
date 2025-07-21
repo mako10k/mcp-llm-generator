@@ -1,0 +1,83 @@
+name: Rule-Guided Feedback Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  rgf-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build TypeScript
+      run: npm run build
+      
+    - name: Install js-yaml for RGF checker
+      run: npm install js-yaml @types/js-yaml
+      
+    - name: Compile RGF Checker
+      run: npx tsc tools/rgf-checker.ts --outDir build/tools --lib es2020 --target es2020 --module commonjs --esModuleInterop --strict
+      
+    - name: Run Rule-Guided Feedback Check
+      id: rgf-check
+      run: |
+        echo "🔍 Running Rule-Guided Feedback Check..."
+        node build/tools/rgf-checker.js check . > rgf-report.txt 2>&1 || echo "violations_found=true" >> $GITHUB_OUTPUT
+        
+    - name: Display RGF Report
+      run: |
+        echo "📊 Rule-Guided Feedback Report:"
+        cat rgf-report.txt
+        
+    - name: Comment PR with violations
+      if: github.event_name == 'pull_request' && steps.rgf-check.outputs.violations_found == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('rgf-report.txt', 'utf8');
+          
+          const violationMessage = '## 🚨 Rule-Guided Feedback Violations\\n\\n' + 
+            report + '\\n\\n' +
+            '### 🔧 What to do:\\n' +
+            '1. Review the violations above\\n' +
+            '2. Apply the suggested fixes\\n' +
+            '3. Test your changes\\n' +
+            '4. Push the fixes to update this PR\\n\\n' +
+            '### 📚 Documentation:\\n' +
+            '- [Copilot Instructions](.github/copilot-instructions.md)\\n' +
+            '- [RGF Rules](copilot-instructions.rules.yaml)\\n\\n' +
+            '*This check is automated based on the Rule-Guided Feedback system to ensure instruction compliance.*';
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: violationMessage
+          });
+          
+    - name: Upload RGF Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: rgf-report
+        path: rgf-report.txt
+        
+    - name: Set status check
+      if: steps.rgf-check.outputs.violations_found == 'true'
+      run: |
+        echo "❌ Rule violations found. Please fix them before merging."
+        exit 1

@@ -1,0 +1,212 @@
+# Rule-Guided Feedback (RGF) Configuration for mcp-sampler
+# Based on research: "Rule-Guided Feedback: Enhancing Reasoning by Enforcing Rule Adherence in Large Language Models"
+# https://arxiv.org/html/2503.11336v1
+
+version: "1.0.0"
+metadata:
+  description: "Structured rules for GitHub Copilot instruction adherence"
+  created: "2025-07-21"
+  updated: "2025-07-21"
+  confidence_framework: "Static markers with dynamic adjustment capability"
+
+# Rule Categories
+categories:
+  - id: "tool-usage"
+    name: "MCP Tool Usage"
+    description: "Rules for proper MCP tool utilization"
+  - id: "test-quality"
+    name: "Test Quality Assurance"
+    description: "Rules for maintaining test integrity"
+  - id: "security"
+    name: "Security & Safety"
+    description: "Rules for safe system operations"
+  - id: "code-quality"
+    name: "Code Quality"
+    description: "Rules for TypeScript/MCP best practices"
+
+# Structured Rules
+rules:
+  # Tool Usage Rules
+  - id: "use-mcp-shell-server"
+    category: "tool-usage"
+    title: "Mandatory mcp-shell-server Usage"
+    description: "Must use mcp-shell-server for all terminal operations"
+    severity: "error"
+    confidence: "high"
+    pattern: "run_in_terminal|terminal command|shell command"
+    anti_pattern: "mcp_mcp-shell-ser_shell_execute"
+    validation_rule: "Any terminal operation must use mcp_mcp-shell-ser_shell_execute tool"
+    fix_suggestion: "Replace run_in_terminal with mcp_mcp-shell-ser_shell_execute"
+    examples:
+      violation: "run_in_terminal('npm test')"
+      correct: "mcp_mcp-shell-ser_shell_execute({command: 'npm test'})"
+    documentation: "See .github/copilot-instructions.md section: mcp-shell-server Automation Guidelines"
+
+  - id: "structured-tool-discipline"
+    category: "tool-usage"
+    title: "Structured Tool Usage Discipline"
+    description: "Must call tools explicitly before executing operations"
+    severity: "error"
+    confidence: "high"
+    pattern: "shell|terminal|command|execute"
+    validation_rule: "Pre-check tool appropriateness before any execution"
+    fix_suggestion: "Use appropriate MCP tool before executing operations"
+    escalation: "Immediately correct misuse and reinforce patterns"
+
+  # Test Quality Rules
+  - id: "no-test-skip"
+    category: "test-quality"
+    title: "Test Skip Prohibition"
+    description: "Prohibit test.skip() and it.skip() usage"
+    severity: "error"
+    confidence: "high"
+    pattern: "test\\.skip\\(|it\\.skip\\("
+    validation_rule: "Zero tolerance for test avoidance without proper justification"
+    fix_suggestion: "Remove test.skip() and implement proper test or provide documented justification with approval"
+    emergency_protocol:
+      - "Document detailed reason in comment"
+      - "Set clear deadline for restoration" 
+      - "Track with ticket management system"
+      - "Require team leader or QA Engineer approval"
+    documentation: "See .github/copilot-instructions.md section: テスト品質ガイドライン"
+
+  - id: "test-failure-resolution"
+    category: "test-quality"
+    title: "Test Failure Root Cause Analysis"
+    description: "Must identify and fix root causes of test failures"
+    severity: "error"
+    confidence: "high"
+    pattern: "test fail|failing test|test error"
+    validation_rule: "Test failure = quality issue requiring immediate resolution"
+    fix_suggestion: "Identify root cause and implement proper fix, not avoidance"
+    quality_standards:
+      - "100% test success rate required"
+      - "Best practice compliance"
+      - "Zero side effects from refactoring"
+      - "Minimize quality risks"
+
+  # Security Rules
+  - id: "destructive-command-confirmation"
+    category: "security"
+    title: "High-Risk Command Confirmation"
+    description: "Require explicit confirmation for destructive operations"
+    severity: "error"
+    confidence: "high"
+    pattern: "rm |mv |kill |pkill |chmod |chown |sudo"
+    validation_rule: "Always require user confirmation for high-risk operations"
+    fix_suggestion: "Request explicit user permission before executing destructive commands"
+    prohibited_operations:
+      - "Kill VS Code Server processes"
+      - "Delete user files or configurations"
+      - "Modify system-wide settings"
+      - "Change network/security configurations"
+
+  - id: "system-environment-protection"
+    category: "security"
+    title: "System Environment Protection"
+    description: "Protect user's work environment and productivity"
+    severity: "error"
+    confidence: "high"
+    pattern: "system|environment|config|delete|remove"
+    validation_rule: "User's work environment is sacred - protect it"
+    fix_suggestion: "Ask rather than assume for system-level operations"
+    responsibility_framework: "You are a powerful assistant with real system impact"
+
+  # Code Quality Rules
+  - id: "typescript-type-safety"
+    category: "code-quality"
+    title: "TypeScript Type Safety"
+    description: "Enforce type safety with Zod and strict mode"
+    severity: "warning"
+    confidence: "high"
+    pattern: "any|unknown|@ts-ignore"
+    validation_rule: "Avoid type assertions; use type guards"
+    fix_suggestion: "Use proper typing with Zod validation and strict TypeScript"
+
+  - id: "error-handling-required"
+    category: "code-quality"
+    title: "Comprehensive Error Handling"
+    description: "Handle errors via try/catch with proper logging"
+    severity: "warning"
+    confidence: "medium"
+    pattern: "throw|error|exception"
+    validation_rule: "All operations must have proper error handling"
+    fix_suggestion: "Implement try/catch blocks and log errors to stderr"
+
+  - id: "resource-cleanup"
+    category: "code-quality"
+    title: "Resource Cleanup"
+    description: "Clean up dynamic resources and metadata"
+    severity: "warning"
+    confidence: "medium"
+    pattern: "resource|connection|file|stream"
+    validation_rule: "Always clean up resources and dynamic metadata"
+    fix_suggestion: "Implement proper resource disposal and cleanup"
+
+# Confidence Escalation Rules
+confidence_escalation:
+  - from: "medium"
+    to: "high"
+    condition: "Rule violated 3+ times in project history"
+    action: "Escalate severity and increase monitoring"
+  
+  - from: "low"
+    to: "medium"
+    condition: "Rule violated and confirmed as valid concern"
+    action: "Upgrade confidence and add to active monitoring"
+
+# Feedback Loop Configuration
+feedback_loop:
+  detection_phase:
+    - "Pattern matching against codebase"
+    - "Static analysis integration"
+    - "CI/CD pipeline checks"
+  
+  notification_phase:
+    - "Immediate violation notification"
+    - "Contextual fix suggestions"
+    - "Confidence marker annotation"
+  
+  correction_phase:
+    - "Automated fix proposal"
+    - "User confirmation required"
+    - "Re-validation after correction"
+  
+  learning_phase:
+    - "Store violation patterns in MCP memory"
+    - "Update confidence levels based on outcomes"
+    - "Enhance rule patterns based on new violations"
+
+# Integration Points
+integration:
+  mcp_memory:
+    scope: "work/projects/mcp-sampler/rule-violations"
+    auto_store: true
+    retention_policy: "90 days"
+  
+  ci_cd:
+    pipeline: ".github/workflows/rgf-check.yml"
+    fail_on: ["error"]
+    warn_on: ["warning"]
+  
+  documentation:
+    source: ".github/copilot-instructions.md"
+    auto_update: false
+    review_required: true
+
+# Metrics and Measurement
+metrics:
+  rule_compliance_rate:
+    target: "100%"
+    measurement: "violations / total_checks"
+    reporting: "weekly"
+  
+  violation_trends:
+    target: "Decreasing"
+    measurement: "trend analysis of violations over time"
+    tracking: "by category, by confidence level"
+    alerting: "significant increases"
+  
+  fix_acceptance_rate:
+    target: "90%"
+    measurement: "accepted_fixes / total_suggestions"

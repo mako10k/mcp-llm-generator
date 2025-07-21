@@ -138,6 +138,61 @@ mcp_assoc-memory_memory_search({ query: "...", limit: 5 });
 
 ---
 
+## 🤖 Rule-Guided Feedback (RGF) System
+
+### Overview
+
+Based on research ["Rule-Guided Feedback: Enhancing Reasoning by Enforcing Rule Adherence in Large Language Models"](https://arxiv.org/html/2503.11336v1), this project implements automated instruction compliance monitoring.
+
+### RGF Implementation
+
+* 🟢 **Structured Rules**: Machine-readable rules in `copilot-instructions.rules.yaml`
+* 🔵 **Automated Detection**: TypeScript-based violation checker (`tools/rgf-checker.ts`)
+* 🟢 **CI/CD Integration**: Automated checks on PR creation and push
+* 🔵 **Feedback Loop**: Detection → Notification → Correction → Re-validation
+
+### Core Mechanisms
+
+1. **Teacher-Student Paradigm**: Rule engine validates AI output against explicit rules
+2. **Attention Optimization**: Focus on rule-related tokens and contexts
+3. **Iterative Improvement**: Automatic violation detection and fix suggestions
+4. **Confidence Escalation**: Rules strengthen based on violation patterns
+
+### Rule Categories
+
+* **Tool Usage**: Mandatory mcp-shell-server usage, structured tool discipline
+* **Test Quality**: Prohibition of test.skip(), root cause analysis requirement
+* **Security**: High-risk command confirmation, system environment protection
+* **Code Quality**: TypeScript safety, error handling, resource cleanup
+
+### Usage
+
+```bash
+# Check current directory for violations
+npm run rgf-check
+
+# Check specific file
+node build/tools/rgf-checker.js check src/index.ts
+
+# View all rules
+node build/tools/rgf-checker.js rules
+```
+
+### Violation Response Protocol
+
+1. **Immediate**: CI/CD fails on error-level violations
+2. **Notification**: PR comments with specific fix suggestions
+3. **Documentation**: Links to relevant instruction sections
+4. **Escalation**: Confidence levels increase for repeated violations
+
+### Integration Points
+
+* **MCP Memory**: Violations stored in `work/projects/mcp-sampler/rule-violations`
+* **CI Pipeline**: `.github/workflows/rgf-check.yml`
+* **Documentation**: Structured rules in `copilot-instructions.rules.yaml`
+
+---
+
 ## ✅ Instruction Confirmation Workflow
 
 When confirmation is needed (ambiguity, complexity, scope change):
