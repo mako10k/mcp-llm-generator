@@ -48,9 +48,13 @@ rules:
     description: "Must call tools explicitly before executing operations"
     severity: "error"
     confidence: "high"
-    pattern: "shell|terminal|command|execute"
+    pattern: "run_in_terminal\\(|shell_execute\\(|terminal command|execute command"
+    anti_pattern: "mcp_mcp-shell-ser_shell_execute"
     validation_rule: "Pre-check tool appropriateness before any execution"
-    fix_suggestion: "Use appropriate MCP tool before executing operations"
+    fix_suggestion: "Use mcp_mcp-shell-ser_shell_execute instead of run_in_terminal"
+    examples:
+      violation: "run_in_terminal('npm test')"
+      correct: "mcp_mcp-shell-ser_shell_execute({command: 'npm test'})"
     escalation: "Immediately correct misuse and reinforce patterns"
 
   # Test Quality Rules
@@ -107,7 +111,7 @@ rules:
     description: "Protect user's work environment and productivity"
     severity: "error"
     confidence: "high"
-    pattern: "system|environment|config|delete|remove"
+    pattern: "rm -rf|sudo rm|kill -9|pkill|chmod 777|chown -R"
     validation_rule: "User's work environment is sacred - protect it"
     fix_suggestion: "Ask rather than assume for system-level operations"
     responsibility_framework: "You are a powerful assistant with real system impact"

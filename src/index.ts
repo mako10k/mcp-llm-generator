@@ -17,6 +17,7 @@ import { z } from "zod";
 import { ContextMemoryIntegration } from "./contextMemory/index.js";
 import { LLMProviderManager } from "./llm/index.js";
 import { registerSharedMemoryTools } from "./tools/shared-memory-integration-v2.js";
+import { CapabilityAwarenessMCPTools } from "./capability/CapabilityAwarenessMCPTools.js";
 import Database from 'better-sqlite3';
 
 // Template structure definition
@@ -117,6 +118,9 @@ const contextMemory = new ContextMemoryIntegration();
 const llmManager = new LLMProviderManager({
   defaultProvider: 'mcp-internal' // MCPサンプリングをデフォルトに保持
 });
+
+// Initialize Capability Awareness System
+let capabilityAwareness: CapabilityAwarenessMCPTools | null = null;
 
 // Global variable for shared memory manager
 let sharedMemoryManager: any = null;
@@ -971,6 +975,87 @@ server.registerTool(
   }
 );
 
+// Step3: Capability Awareness Tools Registration Helper
+async function registerCapabilityAwarenessTools(server: any, capabilityTools: CapabilityAwarenessMCPTools) {
+  // 自覚機能ツール
+  server.registerTool(
+    "capability-get-self-awareness",
+    {
+      title: "Get Self Awareness",
+      description: "指定された人格が自身の能力・制約・責務を認識する（自覚機能）",
+      inputSchema: {
+        context_id: z.string().describe("能力自覚情報を取得する人格のコンテキストID")
+      }
+    },
+    async (args: any) => {
+      return await capabilityTools.handleToolCall("capability-get-self-awareness", args);
+    }
+  );
+
+  // 他覚機能ツール
+  server.registerTool(
+    "capability-get-other-awareness",
+    {
+      title: "Get Other Awareness",
+      description: "観察者人格が他の人格の能力を観察・評価する（他覚機能）",
+      inputSchema: {
+        observer_context_id: z.string().describe("観察者の人格コンテキストID"),
+        target_context_id: z.string().describe("観察対象の人格コンテキストID")
+      }
+    },
+    async (args: any) => {
+      return await capabilityTools.handleToolCall("capability-get-other-awareness", args);
+    }
+  );
+
+  // 継承機能ツール
+  server.registerTool(
+    "capability-process-inheritance",
+    {
+      title: "Process Capability Inheritance",
+      description: "親から子への能力継承を処理する（継承機能）",
+      inputSchema: {
+        parent_context_id: z.string().describe("親人格のコンテキストID"),
+        child_context_id: z.string().describe("子人格のコンテキストID")
+      }
+    },
+    async (args: any) => {
+      return await capabilityTools.handleToolCall("capability-process-inheritance", args);
+    }
+  );
+
+  // 能力マトリックスツール
+  server.registerTool(
+    "capability-get-matrix",
+    {
+      title: "Get Capability Matrix",
+      description: "複数人格の能力マトリックスと継承関係を一覧表示",
+      inputSchema: {
+        context_ids: z.array(z.string()).optional().describe("対象人格のリスト（省略時は全人格）"),
+        include_inheritance: z.boolean().default(true).describe("継承関係の情報を含めるか")
+      }
+    },
+    async (args: any) => {
+      return await capabilityTools.handleToolCall("capability-get-matrix", args);
+    }
+  );
+
+  // 階層分析ツール
+  server.registerTool(
+    "capability-analyze-hierarchy",
+    {
+      title: "Analyze Hierarchy",
+      description: "人格階層全体の能力分布と最適化提案を分析",
+      inputSchema: {
+        root_context_id: z.string().optional().describe("分析開始のルート人格ID（省略時は全階層）")
+      }
+    },
+    async (args: any) => {
+      return await capabilityTools.handleToolCall("capability-analyze-hierarchy", args);
+    }
+  );
+}
+
 // Server startup
 async function main() {
   try {
@@ -984,6 +1069,15 @@ async function main() {
       console.log('✅ Shared memory tools registered (6 tools)');
     } catch (error) {
       console.error('❌ Failed to register shared memory tools:', error);
+    }
+    
+    // Step3: Capability Awareness Tools Registration
+    try {
+      capabilityAwareness = new CapabilityAwarenessMCPTools('data/contexts.db');
+      await registerCapabilityAwarenessTools(server, capabilityAwareness);
+      console.log('✅ Capability awareness tools registered (5 tools)');
+    } catch (error) {
+      console.error('❌ Failed to register capability awareness tools:', error);
     }
     
     // Initialize Context Memory System with LLM sampling capability
