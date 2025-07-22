@@ -46,7 +46,7 @@ export class PromptSecurityManager {
 
   private readonly ENCODING_PATTERNS = [
     // Base64
-    /[A-Za-z0-9+\/]{20,}={0,2}/,
+    /[A-Za-z0-9+/]{20,}={0,2}/,
     
     // URL encoding
     /%[0-9A-Fa-f]{2}/,
@@ -58,7 +58,7 @@ export class PromptSecurityManager {
     /&[a-zA-Z][a-zA-Z0-9]*;/,
     
     // 特殊文字による偽装
-    /[^\x00-\x7F]{3,}/
+    /[^\0-\x7F]{3,}/
   ];
 
   /**

@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { 
   ToolCallEmulationResponse, 
   ToolCallEmulationResponseSchema,
-  ToolCallResult,
   ResponseParserConfig 
 } from './types.js';
 
@@ -234,7 +233,7 @@ export class ResponseParser {
   /**
    * JSONパース
    */
-  private parseJSON(content: string): { success: boolean; data?: any; errors?: ParseError[] } {
+  private parseJSON(content: string): { success: boolean; data?: unknown; errors?: ParseError[] } {
     try {
       // JSONブロックの抽出試行
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
@@ -284,7 +283,7 @@ export class ResponseParser {
    * スキーマ検証
    */
   private validateSchema<T>(
-    data: any,
+    data: unknown,
     schema: z.ZodSchema<T>
   ): { success: boolean; data?: T; errors?: ParseError[] } {
     try {
@@ -465,7 +464,7 @@ export class ResponseParser {
   /**
    * 診断レポート生成
    */
-  generateDiagnosticReport(parseResults: ParseResult<any>[]): {
+  generateDiagnosticReport(parseResults: ParseResult<unknown>[]): {
     summary: string;
     recommendations: string[];
     performance: {
@@ -475,7 +474,7 @@ export class ResponseParser {
     };
   } {
     const successful = parseResults.filter(r => r.success);
-    const failed = parseResults.filter(r => !r.success);
+    const _failed = parseResults.filter(r => !r.success);
     
     const successRate = parseResults.length > 0 ? successful.length / parseResults.length : 0;
     const avgConfidence = successful.length > 0 

@@ -1,0 +1,407 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Copy/Paste Detector Report</title><link href="styles/tailwind.css" rel="stylesheet"><link href="styles/prism.css" rel="stylesheet"></head><body class="bg-gray-100"><header class="bg-white shadow py-4"><div class="container mx-auto px-4"><h1 class="text-3xl font-semibold text-gray-800">jscpd - copy/paste report</h1></div></header><main class="container mx-auto my-8 p-4 bg-white shadow rounded"><section class="mb-8" id="dashboard"><h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard</h2><div class="grid grid-cols-4 gap-4"><div class="bg-blue-200 p-4 rounded text-center"><h3 class="text-lg font-semibold text-blue-800 mb-2">Total Files</h3><span class="text-4xl font-bold text-blue-800">69</span></div><div class="bg-green-200 p-4 rounded text-center"><h3 class="text-lg font-semibold text-green-800 mb-2">Total Lines of Code</h3><span class="text-4xl font-bold text-green-800">16182</span></div><div class="bg-yellow-200 p-4 rounded text-center"><h3 class="text-lg font-semibold text-yellow-800 mb-2">Number of Clones</h3><span class="text-4xl font-bold text-yellow-800">28</span></div><div class="bg-red-200 p-4 rounded text-center"><h3 class="text-lg font-semibold text-red-800 mb-2">Duplicated Lines</h3><span class="text-4xl font-bold text-red-800">398 (2.46%)</span></div></div></section><section class="mb-8" id="formats"><h2 class="text-2xl font-semibold text-gray-700 mb-4">Formats with Duplications</h2><table class="w-full table-auto"><thead><tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th class="py-3 px-6 text-left">Format</th><th class="py-3 px-6 text-left">Files</th><th class="py-3 px-6 text-left">Lines</th><th class="py-3 px-6 text-left">Clones</th><th class="py-3 px-6 text-left">Duplicated Lines</th><th class="py-3 px-6 text-left">Duplicated Tokens</th></tr></thead><tbody><tr class="bg-white border-b border-gray-200 text-gray-800 text-sm"><td class="py-3 px-6"><a class="text-blue-600 hover:underline" href="#typescript-clones">typescript</a></td><td class="py-3 px-6">66</td><td class="py-3 px-6">15777</td><td class="py-3 px-6">28</td><td class="py-3 px-6">398</td><td class="py-3 px-6">3487</td></tr><tr class="bg-white border-b border-gray-200 text-gray-800 text-sm"><td class="py-3 px-6"><a class="text-blue-600 hover:underline" href="#sql-clones">sql</a></td><td class="py-3 px-6">3</td><td class="py-3 px-6">405</td><td class="py-3 px-6">0</td><td class="py-3 px-6">0</td><td class="py-3 px-6">0</td></tr></tbody></table></section><section class="mb-8" id="txt-clones"><a name="typescript-clones"></a><h2 class="text-2xl font-semibold text-gray-700 mb-4">typescript</h2><div class="divide-y divide-gray-200 border-b-2"><div class="py-4"><p class="text-gray-600">src/contextMemory/utils/index.ts (Line 416:20 - Line 430:12), src/contextMemory/utils/index.ts (Line 376:21 - Line 390:13)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn0" onclick="toggleCodeBlock('cloneGroup0', 'expandBtn0', 'collapseBtn0')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn0" onclick="toggleCodeBlock('cloneGroup0', 'expandBtn0', 'collapseBtn0')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup0"><code class="language-typescript text-sm text-gray-800">(input: unknown): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Type guard to check if input is an object
+  if (!input || typeof input !== 'object') {
+    return { isValid: false, errors: ['Input must be an object'] };
+  }
+
+  const inputObj = input as Record&lt;string, unknown&gt;;
+
+  if (!inputObj.name || typeof inputObj.name !== 'string' || inputObj.name.trim().length === 0) {
+    errors.push('Name is required and must be a non-empty string');
+  }
+
+  if (!inputObj.description</code></pre></div><div class="py-4"><p class="text-gray-600">src/contextMemory/utils/database.ts (Line 533:18 - Line 547:16), src/contextMemory/utils/database.ts (Line 258:8 - Line 272:15)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn1" onclick="toggleCodeBlock('cloneGroup1', 'expandBtn1', 'collapseBtn1')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn1" onclick="toggleCodeBlock('cloneGroup1', 'expandBtn1', 'collapseBtn1')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup1"><code class="language-typescript text-sm text-gray-800">[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  } {
+    const page = options.page || 1;
+    const pageSize = options.pageSize || 10;
+
+    // Build WHERE clause based on filters
+    const whereClauses: string[] = [];
+    const params: (string | number)[] = [];
+
+    if (!options.includeInactive</code></pre></div><div class="py-4"><p class="text-gray-600">src/contextMemory/utils/database.ts (Line 548:16 - Line 559:52), src/contextMemory/utils/database.ts (Line 278:2 - Line 289:41)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn2" onclick="toggleCodeBlock('cloneGroup2', 'expandBtn2', 'collapseBtn2')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn2" onclick="toggleCodeBlock('cloneGroup2', 'expandBtn2', 'collapseBtn2')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup2"><code class="language-typescript text-sm text-gray-800">);
+    }
+
+    if (options.nameSearch) {
+      whereClauses.push('name LIKE ?');
+      params.push(`%${options.nameSearch}%`);
+    }
+
+    const whereClause = whereClauses.length &gt; 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // Get total count
+    const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM personality_presets </code></pre></div><div class="py-4"><p class="text-gray-600">src/utils/personaLogger.ts (Line 199:13 - Line 205:10), src/utils/personaLogger.ts (Line 175:15 - Line 181:10)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn3" onclick="toggleCodeBlock('cloneGroup3', 'expandBtn3', 'collapseBtn3')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn3" onclick="toggleCodeBlock('cloneGroup3', 'expandBtn3', 'collapseBtn3')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup3"><code class="language-typescript text-sm text-gray-800">(operation: string) {
+  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value;
+    const logger = PersonaLogger.getInstance();
+
+    descriptor.value = function (...args: any[]) {
+      const contextId</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/SystemPromptGenerator.ts (Line 209:5 - Line 217:10), src/toolcall-emulation/prompt-builders/ParameterFormatter.ts (Line 18:5 - Line 26:3)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn4" onclick="toggleCodeBlock('cloneGroup4', 'expandBtn4', 'collapseBtn4')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn4" onclick="toggleCodeBlock('cloneGroup4', 'expandBtn4', 'collapseBtn4')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup4"><code class="language-typescript text-sm text-gray-800">const allParams = { ...parameters.properties };
+    const formatted: string[] = [];
+
+    // 必須パラメータ
+    if (requiredParams.length &gt; 0) {
+      formatted.push('**Required**:');
+      requiredParams.forEach(param =&gt; {
+        const paramDef = allParams[param];
+        formatted</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/SystemPromptGenerator.ts (Line 344:2 - Line 353:2), src/toolcall-emulation/prompt-builders/PersonaBuilder.ts (Line 29:2 - Line 39:7)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn5" onclick="toggleCodeBlock('cloneGroup5', 'expandBtn5', 'collapseBtn5')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn5" onclick="toggleCodeBlock('cloneGroup5', 'expandBtn5', 'collapseBtn5')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup5"><code class="language-typescript text-sm text-gray-800">`## Persona Context
+
+You are operating with the following capabilities and constraints:
+
+**Expertise Areas**: ${persona.expertise?.join(', ') || 'General'}
+**Available Tools**: ${persona.tools?.join(', ') || 'All available'}
+**Restrictions**: ${persona.restrictions?.join(', ') || 'None'}
+
+Adapt your tool selection and reasoning to align with these persona characteristics.`;
+  }</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/SystemPromptGenerator.ts (Line 358:20 - Line 373:7), src/toolcall-emulation/prompt-builders/ConstraintBuilder.ts (Line 32:6 - Line 47:11)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn6" onclick="toggleCodeBlock('cloneGroup6', 'expandBtn6', 'collapseBtn6')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn6" onclick="toggleCodeBlock('cloneGroup6', 'expandBtn6', 'collapseBtn6')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup6"><code class="language-typescript text-sm text-gray-800">(context: PromptContext): string {
+    const constraints: string[] = [];
+
+    if (context.constraints?.maxTokens) {
+      constraints.push(`- Maximum response tokens: ${context.constraints.maxTokens}`);
+    }
+
+    if (context.constraints?.allowedActions?.length) {
+      constraints.push(`- Allowed actions: ${context.constraints.allowedActions.join(', ')}`);
+    }
+
+    if (context.constraints?.forbiddenActions?.length) {
+      constraints.push(`- Forbidden actions: ${context.constraints.forbiddenActions.join(', ')}`);
+    }
+
+    if (this.config</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/SystemPromptGenerator.ts (Line 459:6 - Line 468:6), src/toolcall-emulation/SystemPromptGeneratorV2.ts (Line 43:15 - Line 49:2)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn7" onclick="toggleCodeBlock('cloneGroup7', 'expandBtn7', 'collapseBtn7')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn7" onclick="toggleCodeBlock('cloneGroup7', 'expandBtn7', 'collapseBtn7')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup7"><code class="language-typescript text-sm text-gray-800">.reduce((complexity, tool) =&gt; {
+      const paramCount = Object.keys(tool.function.parameters.properties || {}).length;
+      const requiredCount = tool.function.parameters.required?.length || 0;
+      return complexity + paramCount + (requiredCount * 0.5);
+    }, 0);
+  }
+
+  /**
+   * プロンプトの切り詰め
+   */</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/SystemPromptGenerator.ts (Line 463:2 - Line 487:6), src/toolcall-emulation/SystemPromptGeneratorV2.ts (Line 205:120 - Line 229:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn8" onclick="toggleCodeBlock('cloneGroup8', 'expandBtn8', 'collapseBtn8')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn8" onclick="toggleCodeBlock('cloneGroup8', 'expandBtn8', 'collapseBtn8')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup8"><code class="language-typescript text-sm text-gray-800">;
+  }
+
+  /**
+   * プロンプトの切り詰め
+   */
+  private truncatePrompt(prompt: string): string {
+    const lines = prompt.split('\n');
+    let truncated = '';
+    
+    for (const line of lines) {
+      if (truncated.length + line.length + 1 &lt;= this.config.contextLengthLimit) {
+        truncated += line + '\n';
+      } else {
+        truncated += '\n... (truncated for length)';
+        break;
+      }
+    }
+    
+    return truncated;
+  }
+
+  /**
+   * テンプレートの初期化
+   */</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/ResponseParser.ts (Line 170:7 - Line 184:6), src/toolcall-emulation/ResponseParser.ts (Line 91:7 - Line 105:10)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn9" onclick="toggleCodeBlock('cloneGroup9', 'expandBtn9', 'collapseBtn9')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn9" onclick="toggleCodeBlock('cloneGroup9', 'expandBtn9', 'collapseBtn9')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup9"><code class="language-typescript text-sm text-gray-800">const jsonData = this.parseJSON(rawContent);
+      if (!jsonData.success) {
+        return {
+          success: false,
+          errors: jsonData.errors,
+          metadata: {
+            rawContent,
+            parseTime: Date.now() - startTime,
+            confidence: 0,
+            retryCount
+          }
+        };
+      }
+
+      const</code></pre></div><div class="py-4"><p class="text-gray-600">src/toolcall-emulation/ResponseParser.ts (Line 203:24 - Line 218:6), src/toolcall-emulation/ResponseParser.ts (Line 145:28 - Line 160:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn10" onclick="toggleCodeBlock('cloneGroup10', 'expandBtn10', 'collapseBtn10')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn10" onclick="toggleCodeBlock('cloneGroup10', 'expandBtn10', 'collapseBtn10')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup10"><code class="language-typescript text-sm text-gray-800">${error instanceof Error ? error.message : String(error)}`,
+          severity: 'error'
+        }],
+        metadata: {
+          rawContent,
+          parseTime: Date.now() - startTime,
+          confidence: 0,
+          retryCount
+        }
+      };
+    }
+  }
+
+  /**
+   * Refusal検出
+   */</code></pre></div><div class="py-4"><p class="text-gray-600">src/tests/ParameterFormatter.test.ts (Line 140:2 - Line 163:2), src/toolcall-emulation/prompt-builders/ParameterFormatter.ts (Line 17:2 - Line 235:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn11" onclick="toggleCodeBlock('cloneGroup11', 'expandBtn11', 'collapseBtn11')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn11" onclick="toggleCodeBlock('cloneGroup11', 'expandBtn11', 'collapseBtn11')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup11"><code class="language-typescript text-sm text-gray-800">{
+        const allParams = { ...parameters.properties };
+        const formatted: string[] = [];
+
+        // 必須パラメータ
+        if (requiredParams.length &gt; 0) {
+          formatted.push('**Required**:');
+          requiredParams.forEach(param =&gt; {
+            const paramDef = allParams[param];
+            formatted.push(`- \`${param}\` (${paramDef.type}): ${paramDef.description}`);
+          });
+        }
+
+        // オプショナルパラメータ
+        if (optionalParams.length &gt; 0) {
+          formatted.push('**Optional**:');
+          optionalParams.forEach(param =&gt; {
+            const paramDef = allParams[param];
+            formatted.push(`- \`${param}\` (${paramDef.type}): ${paramDef.description}`);
+          });
+        }
+
+        return formatted.join('\n');
+      };</code></pre></div><div class="py-4"><p class="text-gray-600">src/rbac/RBACMCPTools.ts (Line 166:41 - Line 177:24), src/rbac/RBACMCPTools.ts (Line 153:36 - Line 164:22)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn12" onclick="toggleCodeBlock('cloneGroup12', 'expandBtn12', 'collapseBtn12')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn12" onclick="toggleCodeBlock('cloneGroup12', 'expandBtn12', 'collapseBtn12')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup12"><code class="language-typescript text-sm text-gray-800">,
+          items: {
+            type: 'object',
+            properties: {
+              action: { type: 'string' },
+              resource: { type: 'string' },
+              conditions: { type: 'object', additionalProperties: true }
+            },
+            required: ['action', 'resource']
+          }
+        },
+        recalculate_inheritance</code></pre></div><div class="py-4"><p class="text-gray-600">src/rbac/RBACAPIService.ts (Line 117:19 - Line 122:22), src/rbac/RBACAPIService.ts (Line 100:23 - Line 105:9)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn13" onclick="toggleCodeBlock('cloneGroup13', 'expandBtn13', 'collapseBtn13')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn13" onclick="toggleCodeBlock('cloneGroup13', 'expandBtn13', 'collapseBtn13')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup13"><code class="language-typescript text-sm text-gray-800">: z.array(z.object({
+    action: z.string().min(1),
+    resource: z.string().min(1),
+    conditions: z.record(z.any()).optional()
+  })).optional(),
+  permissions_to_remove</code></pre></div><div class="py-4"><p class="text-gray-600">src/rbac/RBACAPIService.ts (Line 122:22 - Line 127:24), src/rbac/RBACAPIService.ts (Line 100:23 - Line 105:9)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn14" onclick="toggleCodeBlock('cloneGroup14', 'expandBtn14', 'collapseBtn14')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn14" onclick="toggleCodeBlock('cloneGroup14', 'expandBtn14', 'collapseBtn14')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup14"><code class="language-typescript text-sm text-gray-800">: z.array(z.object({
+    action: z.string().min(1),
+    resource: z.string().min(1),
+    conditions: z.record(z.any()).optional()
+  })).optional(),
+  recalculate_inheritance</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/OpenAIProvider.ts (Line 99:14 - Line 108:5), src/llm/OpenAIProvider.ts (Line 47:8 - Line 56:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn15" onclick="toggleCodeBlock('cloneGroup15', 'expandBtn15', 'collapseBtn15')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn15" onclick="toggleCodeBlock('cloneGroup15', 'expandBtn15', 'collapseBtn15')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup15"><code class="language-typescript text-sm text-gray-800">&lt;LLMResponse&gt; {
+    try {
+      const response = await this.makeRequest('/chat/completions', {
+        model: options.model || this.defaultModel,
+        messages: this.formatMessages(messages),
+        max_tokens: options.maxTokens || 1000,
+        temperature: options.temperature ?? 0.7,
+        top_p: options.topP,
+        stop: options.stop,
+        stream: true</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/OpenAIProvider.ts (Line 118:6 - Line 128:4), src/llm/StreamingUtils.ts (Line 33:5 - Line 43:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn16" onclick="toggleCodeBlock('cloneGroup16', 'expandBtn16', 'collapseBtn16')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn16" onclick="toggleCodeBlock('cloneGroup16', 'expandBtn16', 'collapseBtn16')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup16"><code class="language-typescript text-sm text-gray-800">);
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              return;
+            }
+
+            try</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/LLMProviderManager.ts (Line 132:4 - Line 139:6), src/llm/LLMProviderManager.ts (Line 89:8 - Line 96:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn17" onclick="toggleCodeBlock('cloneGroup17', 'expandBtn17', 'collapseBtn17')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn17" onclick="toggleCodeBlock('cloneGroup17', 'expandBtn17', 'collapseBtn17')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup17"><code class="language-typescript text-sm text-gray-800">[],
+    options: LLMRequestOptions &amp; { provider?: string } = {}
+  ): Promise&lt;LLMResponse&gt; {
+    const { provider: providerName, ...llmOptions } = options;
+    
+    const provider = this.getProvider(providerName);
+    if (!provider) {
+      throw</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/LLMProviderManager.ts (Line 134:8 - Line 142:20), src/llm/LLMProviderManager.ts (Line 112:14 - Line 120:22)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn18" onclick="toggleCodeBlock('cloneGroup18', 'expandBtn18', 'collapseBtn18')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn18" onclick="toggleCodeBlock('cloneGroup18', 'expandBtn18', 'collapseBtn18')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup18"><code class="language-typescript text-sm text-gray-800">&lt;LLMResponse&gt; {
+    const { provider: providerName, ...llmOptions } = options;
+    
+    const provider = this.getProvider(providerName);
+    if (!provider) {
+      throw new Error(`Provider '${providerName || this.defaultProvider}' not available`);
+    }
+
+    if (!provider.supportsToolCalling</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/ClaudeProvider.ts (Line 80:9 - Line 94:6), src/llm/OpenAIProvider.ts (Line 77:9 - Line 91:5)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn19" onclick="toggleCodeBlock('cloneGroup19', 'expandBtn19', 'collapseBtn19')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn19" onclick="toggleCodeBlock('cloneGroup19', 'expandBtn19', 'collapseBtn19')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup19"><code class="language-typescript text-sm text-gray-800">}
+      };
+    } catch (error) {
+      this.handleError(error, 'generateMessage');
+    }
+  }
+
+  async generateWithTools(
+    messages: Message[],
+    tools: any[],
+    options: LLMRequestOptions = {}
+  ): Promise&lt;LLMResponse&gt; {
+    return this.generateMessage(messages, {
+      ...options,
+      tools: tools</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/ClaudeProvider.ts (Line 102:14 - Line 116:5), src/llm/ClaudeProvider.ts (Line 47:8 - Line 61:6)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn20" onclick="toggleCodeBlock('cloneGroup20', 'expandBtn20', 'collapseBtn20')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn20" onclick="toggleCodeBlock('cloneGroup20', 'expandBtn20', 'collapseBtn20')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup20"><code class="language-typescript text-sm text-gray-800">&lt;LLMResponse&gt; {
+    try {
+      const { system, messages: formattedMessages } = this.formatMessages(messages);
+      
+      const response = await this.makeRequest('/v1/messages', {
+        model: options.model || this.defaultModel,
+        max_tokens: options.maxTokens || 1000,
+        temperature: options.temperature ?? 0.7,
+        top_p: options.topP,
+        stop_sequences: options.stop,
+        system,
+        messages: formattedMessages,
+        tools: options.tools ? this.formatTools(options.tools) : undefined,
+        tool_choice: options.toolChoice,
+        stream: true</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/ClaudeProvider.ts (Line 117:7 - Line 131:4), src/llm/OpenAIProvider.ts (Line 111:7 - Line 124:3)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn21" onclick="toggleCodeBlock('cloneGroup21', 'expandBtn21', 'collapseBtn21')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn21" onclick="toggleCodeBlock('cloneGroup21', 'expandBtn21', 'collapseBtn21')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup21"><code class="language-typescript text-sm text-gray-800">}, true);
+
+      let buffer = '';
+      const decoder = new TextDecoder();
+
+      for await (const chunk of response.body) {
+        buffer += decoder.decode(chunk, { stream: true });
+        const lines = buffer.split('\\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            
+            try</code></pre></div><div class="py-4"><p class="text-gray-600">src/llm/ClaudeProvider.ts (Line 197:20 - Line 212:2), src/llm/OpenAIProvider.ts (Line 203:20 - Line 218:2)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn22" onclick="toggleCodeBlock('cloneGroup22', 'expandBtn22', 'collapseBtn22')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn22" onclick="toggleCodeBlock('cloneGroup22', 'expandBtn22', 'collapseBtn22')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup22"><code class="language-typescript text-sm text-gray-800">${response.status} ${response.statusText}`);
+      (error as any).response = {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorBody
+      };
+      throw error;
+    }
+
+    if (stream) {
+      return response;
+    }
+
+    return response.json();
+  }
+}</code></pre></div><div class="py-4"><p class="text-gray-600">src/database/migrate_rbac.ts (Line 8:5 - Line 40:19), src/database/migrate_rbac_manual.ts (Line 7:17 - Line 39:22)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn23" onclick="toggleCodeBlock('cloneGroup23', 'expandBtn23', 'collapseBtn23')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn23" onclick="toggleCodeBlock('cloneGroup23', 'expandBtn23', 'collapseBtn23')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup23"><code class="language-typescript text-sm text-gray-800">;
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+interface MigrationResult {
+  success: boolean;
+  tablesCreated: number;
+  columnsAdded: number;
+  indexesCreated: number;
+  viewsCreated: number;
+  triggersCreated: number;
+  errors: string[];
+}
+
+async function runRBACMigration(): Promise&lt;MigrationResult&gt; {
+  console.log('🚀 Phase 1: RBAC データベースマイグレーション開始');
+  
+  const result: MigrationResult = {
+    success: false,
+    tablesCreated: 0,
+    columnsAdded: 0,
+    indexesCreated: 0,
+    viewsCreated: 0,
+    triggersCreated: 0,
+    errors: []
+  };
+
+  try {
+    // データベース接続
+    const dbPath = join(__dirname, '../../persona.db'</code></pre></div><div class="py-4"><p class="text-gray-600">src/database/migrate_rbac.ts (Line 54:26 - Line 67:6), src/database/migrate_rbac_manual.ts (Line 53:2 - Line 66:4)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn24" onclick="toggleCodeBlock('cloneGroup24', 'expandBtn24', 'collapseBtn24')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn24" onclick="toggleCodeBlock('cloneGroup24', 'expandBtn24', 'collapseBtn24')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup24"><code class="language-typescript text-sm text-gray-800">);
+    
+    // 既存テーブル確認
+    const existingTables = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name IN ('persona_hierarchy', 'persona_permission_cache')
+    `).all() as Array&lt;{ name: string }&gt;;
+    
+    if (existingTables.length &gt; 0) {
+      console.log('⚠️  一部のRBACテーブルが既に存在します:', existingTables.map(t =&gt; t.name));
+    }
+    
+    // inherited_permissions カラムの存在確認
+    const</code></pre></div><div class="py-4"><p class="text-gray-600">src/database/migrate_rbac.ts (Line 67:5 - Line 74:18), src/database/migrate_rbac_manual.ts (Line 67:7 - Line 73:2)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn25" onclick="toggleCodeBlock('cloneGroup25', 'expandBtn25', 'collapseBtn25')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn25" onclick="toggleCodeBlock('cloneGroup25', 'expandBtn25', 'collapseBtn25')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup25"><code class="language-typescript text-sm text-gray-800">const roleTableInfo = db.prepare(`PRAGMA table_info(persona_roles)`).all() as Array&lt;{ name: string }&gt;;
+    const hasInheritedPermissions = roleTableInfo.some(col =&gt; col.name === 'inherited_permissions');
+    
+    if (hasInheritedPermissions) {
+      console.log('⚠️  inherited_permissions カラムは既に存在します');
+    }
+    
+    // スキーマを分割してバッチ実行</code></pre></div><div class="py-4"><p class="text-gray-600">src/database/migrate_rbac.ts (Line 146:9 - Line 170:3), src/database/migrate_rbac_manual.ts (Line 150:9 - Line 174:2)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn26" onclick="toggleCodeBlock('cloneGroup26', 'expandBtn26', 'collapseBtn26')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn26" onclick="toggleCodeBlock('cloneGroup26', 'expandBtn26', 'collapseBtn26')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup26"><code class="language-typescript text-sm text-gray-800">}
+      }
+    });
+    
+    // トランザクション実行
+    transaction();
+    
+    // 自分自身への階層レコードを挿入（既存の全人格に対して）
+    const existingContexts = db.prepare(`
+      SELECT DISTINCT context_id FROM persona_capabilities
+    `).all() as Array&lt;{ context_id: string }&gt;;
+    
+    const insertSelfHierarchy = db.prepare(`
+      INSERT OR IGNORE INTO persona_hierarchy (ancestor_id, descendant_id, depth, is_direct) 
+      VALUES (?, ?, 0, FALSE)
+    `);
+    
+    for (const context of existingContexts) {
+      insertSelfHierarchy.run(context.context_id, context.context_id);
+    }
+    
+    console.log(`✅ 既存人格の自己参照階層レコード作成: ${existingContexts.length}件`);
+    
+    // データベース整合性チェック
+    const integrityCheck = db.pragma('integrity_check') as</code></pre></div><div class="py-4"><p class="text-gray-600">src/database/migrate_rbac.ts (Line 172:5 - Line 220:2), src/database/migrate_rbac_manual.ts (Line 183:15 - Line 231:2)</p><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2" id="expandBtn27" onclick="toggleCodeBlock('cloneGroup27', 'expandBtn27', 'collapseBtn27')">Show code</button><button class="bg-gray-500 text-white px-1 py-0.5 text-xs rounded focus:outline-none ml-2 hidden" id="collapseBtn27" onclick="toggleCodeBlock('cloneGroup27', 'expandBtn27', 'collapseBtn27')">Hide code</button><pre class="bg-gray-100 border border-gray-200 p-4 rounded mt-2 hidden" id="cloneGroup27"><code class="language-typescript text-sm text-gray-800">)}`);
+    }
+    
+    console.log('✅ データベース整合性チェック: OK');
+    
+    // 最適化実行
+    db.pragma('optimize');
+    console.log('✅ データベース最適化完了');
+    
+    db.close();
+    
+    result.success = true;
+    
+    console.log('\n🎉 Phase 1: RBAC データベースマイグレーション完了!');
+    console.log(`📊 作成されたテーブル: ${result.tablesCreated}`);
+    console.log(`📊 追加されたカラム: ${result.columnsAdded}`);
+    console.log(`📊 作成されたインデックス: ${result.indexesCreated}`);
+    console.log(`📊 作成されたビュー: ${result.viewsCreated}`);
+    console.log(`📊 作成されたトリガー: ${result.triggersCreated}`);
+    
+    return result;
+    
+  } catch (error: unknown) {
+    result.errors.push(`マイグレーション実行エラー: ${error instanceof Error ? error.message : String(error)}`);
+    console.error('❌ マイグレーションに失敗しました:', error);
+    result.success = false;
+    return result;
+  }
+}
+
+// スクリプトが直接実行された場合
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runRBACMigration()
+    .then(result =&gt; {
+      if (result.success) {
+        console.log('✅ マイグレーション成功');
+        process.exit(0);
+      } else {
+        console.error('❌ マイグレーション失敗:', result.errors);
+        process.exit(1);
+      }
+    })
+    .catch(error =&gt; {
+      console.error('❌ 予期しないエラー:', error);
+      process.exit(1);
+    });
+}
+
+export { runRBACMigration, type MigrationResult };</code></pre></div><!-- Add more clone groups for .txt format as needed         // Add more clone groups for .txt format as needed--></div><a name="sql-clones"></a><h2 class="text-2xl font-semibold text-gray-700 mb-4">sql</h2><div class="divide-y divide-gray-200 border-b-2"><!-- Add more clone groups for .txt format as needed         // Add more clone groups for .txt format as needed--></div></section><!-- Add more sections for other formats and clone groups as needed--></main><footer class="bg-white shadow mt-8 py-4"><div class="container mx-auto px-4 text-center"><p class="text-sm text-gray-600">This report is generated by jscpd, an open-source copy/paste detector.</p><p class="text-sm text-gray-600">jscpd is licensed under the MIT License.</p><a class="text-blue-500 text-sm" href="https://github.com/kucherenko/jscpd" target="_blank" rel="noopener noreferrer">View jscpd on GitHub</a></div></footer><script src="js/prism.js"></script><script>function toggleCodeBlock(codeBlockId, expandBtnId, collapseBtnId) {
+  const codeBlock = document.getElementById(codeBlockId);
+  const expandBtn = document.getElementById(expandBtnId);
+  const collapseBtn = document.getElementById(collapseBtnId);
+
+  codeBlock.classList.toggle('hidden');
+  expandBtn.classList.toggle('hidden');
+  collapseBtn.classList.toggle('hidden');
+}</script></body></html>

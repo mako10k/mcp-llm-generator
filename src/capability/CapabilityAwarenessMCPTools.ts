@@ -12,6 +12,10 @@ import {
   createMCPTextResponse,
   createMCPErrorResponse
 } from '../types/mcp-responses.js';
+import { 
+  MCPToolDefinitions,
+  MCPToolRegistry 
+} from '../types/mcp-tool-definitions.js';
 
 // MCP tool schema definitions
 const GetSelfAwarenessSchema = z.object({
@@ -33,7 +37,7 @@ const GetCapabilityMatrixSchema = z.object({
   include_inheritance: z.boolean().default(true).describe('Whether to include inheritance relationship information')
 });
 
-export class CapabilityAwarenessMCPTools {
+export class CapabilityAwarenessMCPTools implements MCPToolRegistry {
   private service: CapabilityAwarenessService;
 
   constructor(dbPath: string) {
@@ -44,7 +48,7 @@ export class CapabilityAwarenessMCPTools {
    * MCP Tool: Self-awareness function
    * Get self-recognition information for specified persona
    */
-  getToolDefinitions(): Record<string, { description: string; inputSchema: any }> {
+  getToolDefinitions(): MCPToolDefinitions {
     return {
       'persona-inspect-capabilities': {
         description: 'Enable specified persona to recognize own capabilities, constraints, and responsibilities (self-awareness)',
@@ -78,7 +82,7 @@ export class CapabilityAwarenessMCPTools {
   /**
    * MCP tool execution handler
    */
-  async handleToolCall(toolName: string, args: any): Promise<MCPToolResponse> {
+  async handleToolCall(toolName: string, args: unknown): Promise<MCPToolResponse> {
     try {
       switch (toolName) {
         case 'persona-inspect-capabilities':
@@ -107,7 +111,7 @@ export class CapabilityAwarenessMCPTools {
     }
   }
 
-  private async handleGetSelfAwareness(args: any): Promise<MCPToolResponse> {
+  private async handleGetSelfAwareness(args: unknown): Promise<MCPToolResponse> {
     const { context_id } = GetSelfAwarenessSchema.parse(args);
     
     const selfAwareness = await this.service.getSelfAwareness(context_id);
@@ -134,7 +138,7 @@ export class CapabilityAwarenessMCPTools {
     return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleGetOtherAwareness(args: any): Promise<MCPToolResponse> {
+  private async handleGetOtherAwareness(args: unknown): Promise<MCPToolResponse> {
     const { observer_context_id, target_context_id } = GetOtherAwarenessSchema.parse(args);
     
     const otherAwareness = await this.service.getOtherAwareness(observer_context_id, target_context_id);
@@ -153,7 +157,7 @@ export class CapabilityAwarenessMCPTools {
     return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleProcessInheritance(args: any): Promise<MCPToolResponse> {
+  private async handleProcessInheritance(args: unknown): Promise<MCPToolResponse> {
     const { parent_context_id, child_context_id } = ProcessInheritanceSchema.parse(args);
     
     await this.service.processCapabilityInheritance(parent_context_id, child_context_id);
@@ -181,7 +185,7 @@ export class CapabilityAwarenessMCPTools {
     return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleGetCapabilityMatrix(args: any): Promise<MCPToolResponse> {
+  private async handleGetCapabilityMatrix(args: unknown): Promise<MCPToolResponse> {
     const { context_ids, include_inheritance } = GetCapabilityMatrixSchema.parse(args);
     
     // TODO: Implement multiple persona capability matrix generation
@@ -204,11 +208,14 @@ export class CapabilityAwarenessMCPTools {
     return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async handleAnalyzeHierarchy(args: any): Promise<MCPToolResponse> {
-    const { root_context_id } = args;
+  private async handleAnalyzeHierarchy(args: unknown): Promise<MCPToolResponse> {
+    // Validate input schema (root_context_id will be used in future implementation)
+    z.object({
+      root_context_id: z.string().optional().describe('Root persona ID for analysis start (all hierarchies if omitted)')
+    }).parse(args);
     
     // TODO: Hierarchy analysis and optimization suggestions
-    const analysis = await this.analyzeHierarchyStructure(root_context_id);
+    const analysis = await this.analyzeHierarchyStructure();
     
     // MCP仕様: text値はJSONパース可能文字列である必要
     const responseData = {
@@ -224,7 +231,15 @@ export class CapabilityAwarenessMCPTools {
     return createMCPTextResponse(JSON.stringify(responseData));
   }
 
-  private async generateCapabilityMatrix(contextIds?: string[], includeInheritance: boolean = true) {
+  private async generateCapabilityMatrix(contextIds?: string[], includeInheritance: boolean = true): Promise<{
+    personas: unknown[];
+    statistics: {
+      unique_expertise_count: number;
+      unique_tools_count: number;
+      max_depth: number;
+    };
+    inheritance_map: Record<string, unknown> | null;
+  }> {
     // TODO: Implement capability matrix generation
     return {
       personas: [],
@@ -237,10 +252,16 @@ export class CapabilityAwarenessMCPTools {
     };
   }
 
-  private async analyzeHierarchyStructure(rootContextId?: string) {
+  private async analyzeHierarchyStructure(): Promise<{
+    total_personas: number;
+    hierarchical_levels: number;
+    optimization_suggestions: string[];
+    potential_improvements: string[];
+  }> {
     // TODO: Implement hierarchy analysis
     return {
       total_personas: 0,
+      hierarchical_levels: 0,
       optimization_suggestions: [],
       potential_improvements: []
     };

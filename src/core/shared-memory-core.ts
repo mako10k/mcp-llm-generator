@@ -167,13 +167,13 @@ export class SharedMemoryCore {
    */
   searchMemories(
     request: SearchMemoryRequest,
-    requesterPersonaId: string
+    _requesterPersonaId: string
   ): SharedMemoryResult<{ memories: SharedMemoryItem[]; total: number }> {
     try {
       const validatedParams = SearchMemoryRequestSchema.parse(request);
       
       let whereClause = '';
-      let params: any[] = [];
+      let params: (string | number)[] = [];
       
       if (validatedParams.query) {
         whereClause = 'WHERE (title LIKE ? OR content LIKE ?)';
@@ -220,7 +220,7 @@ export class SharedMemoryCore {
   /**
    * 共有メモの取得
    */
-  getMemory(id: string, requesterPersonaId: string): SharedMemoryResult<SharedMemoryItem> {
+  getMemory(id: string, _requesterPersonaId: string): SharedMemoryResult<SharedMemoryItem> {
     try {
       const stmt = this.db.prepare('SELECT * FROM shared_memories WHERE id = ?');
       const memory = stmt.get(id) as SharedMemoryItem | undefined;
@@ -277,7 +277,7 @@ export class SharedMemoryCore {
 
       // 更新実行
       const updateFields: string[] = [];
-      const updateValues: any[] = [];
+      const updateValues: (string | number)[] = [];
       
       if (validatedData.title !== undefined) {
         updateFields.push('title = ?');

@@ -10,7 +10,7 @@ export interface Tool {
     description: string;
     parameters: {
       type: 'object';
-      properties: Record<string, any>;
+      properties: Record<string, unknown>;
       required?: string[];
     };
   };
@@ -18,7 +18,7 @@ export interface Tool {
 
 export interface ToolCall {
   tool_name: string;
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
   confidence: number;
   reasoning: string;
 }

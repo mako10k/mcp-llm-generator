@@ -5,6 +5,76 @@
 
 import { BaseLLMProvider, LLMResponse, Message, LLMRequestOptions } from './LLMProvider.js';
 
+// OpenAI API レスポンス型の定義
+interface OpenAIChoice {
+  message: {
+    content: string | null;
+  };
+  finish_reason: string;
+  delta?: {
+    content?: string;
+  };
+}
+
+interface OpenAIUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+interface OpenAIChatResponse {
+  id: string;
+  created: number;
+  model: string;
+  choices: OpenAIChoice[];
+  usage?: OpenAIUsage;
+  system_fingerprint?: string;
+}
+
+interface OpenAIModel {
+  id: string;
+}
+
+interface OpenAIModelsResponse {
+  data: OpenAIModel[];
+}
+
+// エラー型の定義
+interface OpenAIError extends Error {
+  response?: {
+    status: number;
+    statusText: string;
+    body: string;
+  };
+}
+
+// 型ガード関数
+function isOpenAIChatResponse(obj: unknown): obj is OpenAIChatResponse {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const candidate = obj as Record<string, unknown>;
+  return 'choices' in candidate && 
+         'model' in candidate &&
+         Array.isArray(candidate.choices);
+}
+
+function isOpenAIModelsResponse(obj: unknown): obj is OpenAIModelsResponse {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const candidate = obj as Record<string, unknown>;
+  return 'data' in candidate && Array.isArray(candidate.data);
+}
+
+function isStreamResponse(obj: unknown): obj is Response {
+  return obj instanceof Response;
+}
+
+// Tool型の安全な型ガード
+function isValidTool(obj: unknown): obj is { name: string; description: string; inputSchema?: unknown; parameters?: unknown } {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const candidate = obj as Record<string, unknown>;
+  return typeof candidate.name === 'string' &&
+         typeof candidate.description === 'string';
+}
+
 export interface OpenAIConfig {
   apiKey?: string;
   baseURL?: string;
@@ -46,7 +116,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     options: LLMRequestOptions = {}
   ): Promise<LLMResponse> {
     try {
-      const response = await this.makeRequest('/chat/completions', {
+      const responseData = await this.makeRequest('/chat/completions', {
         model: options.model || this.defaultModel,
         messages: this.formatMessages(messages),
         max_tokens: options.maxTokens || 1000,
@@ -59,21 +129,32 @@ export class OpenAIProvider extends BaseLLMProvider {
         ...options.metadata
       });
 
-      const choice = response.choices[0];
+      if (!isOpenAIChatResponse(responseData)) {
+        throw new Error(`Invalid response format from OpenAI chat API. Expected object with 'choices' and 'model', received: ${JSON.stringify(responseData)}`);
+      }
+
+      if (!responseData.choices || responseData.choices.length === 0) {
+        throw new Error('OpenAI API returned empty choices array');
+      }
+
+      const choice = responseData.choices[0];
+      if (!choice.message) {
+        throw new Error(`Invalid choice format: missing 'message' property. Received: ${JSON.stringify(choice)}`);
+      }
       return {
         content: choice.message.content || '',
-        model: response.model,
+        model: responseData.model,
         stopReason: choice.finish_reason,
-        usage: response.usage ? {
-          inputTokens: response.usage.prompt_tokens,
-          outputTokens: response.usage.completion_tokens,
-          totalTokens: response.usage.total_tokens
+        usage: responseData.usage ? {
+          inputTokens: responseData.usage.prompt_tokens,
+          outputTokens: responseData.usage.completion_tokens,
+          totalTokens: responseData.usage.total_tokens
         } : undefined,
         finishReason: choice.finish_reason,
         metadata: {
-          id: response.id,
-          created: response.created,
-          systemFingerprint: response.system_fingerprint
+          id: responseData.id,
+          created: responseData.created,
+          systemFingerprint: responseData.system_fingerprint
         }
       };
     } catch (error) {
@@ -83,7 +164,7 @@ export class OpenAIProvider extends BaseLLMProvider {
 
   async generateWithTools(
     messages: Message[],
-    tools: any[],
+    tools: unknown[],
     options: LLMRequestOptions = {}
   ): Promise<LLMResponse> {
     return this.generateMessage(messages, {
@@ -98,7 +179,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     options: LLMRequestOptions = {}
   ): AsyncIterable<LLMResponse> {
     try {
-      const response = await this.makeRequest('/chat/completions', {
+      const responseData = await this.makeRequest('/chat/completions', {
         model: options.model || this.defaultModel,
         messages: this.formatMessages(messages),
         max_tokens: options.maxTokens || 1000,
@@ -110,10 +191,18 @@ export class OpenAIProvider extends BaseLLMProvider {
         tool_choice: options.toolChoice
       }, true);
 
+      if (!isStreamResponse(responseData)) {
+        throw new Error('Expected stream response from OpenAI API');
+      }
+
+      if (!responseData.body) {
+        throw new Error('No response body available for streaming');
+      }
+
       let buffer = '';
       const decoder = new TextDecoder();
 
-      for await (const chunk of response.body) {
+      for await (const chunk of responseData.body) {
         buffer += decoder.decode(chunk, { stream: true });
         const lines = buffer.split('\\n');
         buffer = lines.pop() || '';
@@ -149,40 +238,63 @@ export class OpenAIProvider extends BaseLLMProvider {
 
   async getAvailableModels(): Promise<string[]> {
     try {
-      const response = await this.makeRequest('/models');
-      return response.data
-        .filter((model: any) => model.id.startsWith('gpt-'))
-        .map((model: any) => model.id)
+      const responseData = await this.makeRequest('/models');
+      
+      if (!isOpenAIModelsResponse(responseData)) {
+        throw new Error(`Invalid response format from OpenAI models API. Expected object with 'data' array, received: ${JSON.stringify(responseData)}`);
+      }
+
+      const models = responseData.data
+        .filter((model: OpenAIModel) => {
+          if (typeof model.id !== 'string') {
+            throw new Error(`Invalid model object: missing or invalid 'id' property. Received: ${JSON.stringify(model)}`);
+          }
+          return model.id.startsWith('gpt-');
+        })
+        .map((model: OpenAIModel) => model.id)
         .sort();
+
+      if (models.length === 0) {
+        throw new Error('No valid GPT models found in OpenAI API response');
+      }
+
+      return models;
     } catch (error) {
-      console.warn('Failed to fetch OpenAI models, using default list:', error);
-      return this.supportedModels;
+      // ここでもサイレントフォールバックではなく、エラーを再スロー
+      console.error('Failed to fetch OpenAI models:', error);
+      throw new Error(`OpenAI models API failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  private formatMessages(messages: Message[]): any[] {
+  private formatMessages(messages: Message[]): Array<Record<string, unknown>> {
     return messages.map(msg => ({
       role: msg.role,
       content: msg.content
     }));
   }
 
-  private formatTools(tools: any[]): any[] {
-    return tools.map(tool => ({
-      type: 'function',
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.inputSchema || tool.parameters
+  private formatTools(tools: unknown[]): Array<Record<string, unknown>> {
+    return tools.map((toolItem, index) => {
+      if (!isValidTool(toolItem)) {
+        throw new Error(`Invalid tool at index ${index}: missing required properties 'name' or 'description'. Received: ${JSON.stringify(toolItem)}`);
       }
-    }));
+      
+      return {
+        type: 'function',
+        function: {
+          name: toolItem.name,
+          description: toolItem.description,
+          parameters: toolItem.inputSchema || toolItem.parameters
+        }
+      };
+    });
   }
 
   private async makeRequest(
     endpoint: string,
-    body?: any,
+    body?: Record<string, unknown>,
     stream = false
-  ): Promise<any> {
+  ): Promise<OpenAIChatResponse | OpenAIModelsResponse | Response> {
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json'
@@ -200,8 +312,8 @@ export class OpenAIProvider extends BaseLLMProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      const error = new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-      (error as any).response = {
+      const error = new Error(`OpenAI API error: ${response.status} ${response.statusText}`) as OpenAIError;
+      error.response = {
         status: response.status,
         statusText: response.statusText,
         body: errorBody
@@ -213,6 +325,6 @@ export class OpenAIProvider extends BaseLLMProvider {
       return response;
     }
 
-    return response.json();
+    return response.json() as Promise<OpenAIChatResponse | OpenAIModelsResponse>;
   }
 }

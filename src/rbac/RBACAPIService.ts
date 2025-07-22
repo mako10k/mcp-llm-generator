@@ -11,7 +11,7 @@ export interface CreateHierarchyRequest {
   parent_context_id: string;
   child_context_id: string;
   permissions_to_inherit?: Permission[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>; // 修正
 }
 
 export interface CreateHierarchyResponse {
@@ -47,7 +47,7 @@ export interface CheckPermissionRequest {
   context_id: string;
   action: string;
   resource: string;
-  conditions?: Record<string, any>;
+  conditions?: Record<string, string | number | boolean | null>; // 修正
 }
 
 export interface CheckPermissionResponse {

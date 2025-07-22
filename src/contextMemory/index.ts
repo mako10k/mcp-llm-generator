@@ -8,6 +8,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequest, CallToolResult, ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import { ContextMemoryTools } from './tools/index.js';
+import { CreateMessageCallback } from './types.js';
 
 // =============================================================================
 // Context Memory Integration Class
@@ -24,7 +25,7 @@ export class ContextMemoryIntegration {
   /**
    * Initialize the Context Memory System with the MCP server
    */
-  async initialize(server: Server, createMessageCallback?: (messages: any[], options?: any) => Promise<any>): Promise<void> {
+  async initialize(server: Server, createMessageCallback?: CreateMessageCallback): Promise<void> {
     if (this.isInitialized) {
       console.warn('Context Memory System is already initialized');
       return;
@@ -87,7 +88,7 @@ export class ContextMemoryIntegration {
   /**
    * Get system statistics
    */
-  getStatistics() {
+  getStatistics(): unknown {
     if (!this.isInitialized) {
       return null;
     }

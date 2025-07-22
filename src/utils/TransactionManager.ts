@@ -5,6 +5,15 @@
 import Database from 'better-sqlite3';
 import { PromptMergeDatabase } from './PromptMergeDatabase.js';
 
+// 型定義
+interface BackupData {
+  contextId: string;
+  timestamp: string;
+  data: {
+    [key: string]: unknown;
+  };
+}
+
 /**
  * Step4マージ機能用のトランザクション管理クラス
  * better-sqlite3のネイティブトランザクション機能をラップ
@@ -40,16 +49,11 @@ export class TransactionManager {
     return this.runMergeTransaction(() => {
       const results: T[] = [];
       
-      try {
-        for (const step of steps) {
-          const result = step();
-          results.push(result);
-        }
-        return results;
-      } catch (error) {
-        // better-sqlite3のトランザクションが自動的にロールバック
-        throw error;
+      for (const step of steps) {
+        const result = step();
+        results.push(result);
       }
+      return results;
     });
   }
 
@@ -104,7 +108,7 @@ export class TransactionManager {
   runBackupTransaction<T>(
     contextId: string,
     operation: () => T
-  ): { result: T; backupData: any } {
+  ): { result: T; backupData: BackupData } {
     return this.runMergeTransaction(() => {
       // 現在の状態をバックアップ
       const backupData = this.createBackup(contextId);
@@ -123,7 +127,7 @@ export class TransactionManager {
   /**
    * 現在の状態のバックアップ作成
    */
-  private createBackup(contextId: string): any {
+  private createBackup(contextId: string): BackupData {
     // 現在のマージ履歴とコンテキスト情報をバックアップ
     const latestVersion = this.mergeDb.getLatestVersion(contextId);
     const latestHistory = latestVersion > 0 
@@ -132,9 +136,11 @@ export class TransactionManager {
 
     return {
       contextId,
-      latestVersion,
-      latestHistory,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      data: {
+        latestVersion,
+        latestHistory
+      }
     };
   }
 

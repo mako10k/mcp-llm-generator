@@ -6,20 +6,14 @@
  */
 
 import { z } from 'zod';
-import { CallToolRequest, CallToolResult, ListToolsResult, Tool } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequest, CallToolResult, ListToolsResult } from '@modelcontextprotocol/sdk/types.js';
 import { ContextMemoryDatabase } from '../utils/database.js';
+import { PersonaPromptMerger } from '../../utils/PersonaPromptMerger.js';
+import { CreateMessageCallback } from '../types.js';
 import {
-  Context,
-  Conversation,
-  PersonalityPreset,
   ContextManageInput,
-  ContextManageOutput,
   PersonalityPresetManageInput,
-  PersonalityPresetManageOutput,
-  ContextChatInput,
-  ContextChatOutput,
   ConversationManageInput,
-  ConversationManageOutput,
   DEFAULT_VALUES
 } from '../types/index.js';
 import {
@@ -103,16 +97,18 @@ const ConversationManageInputSchema = z.object({
 
 export class ContextMemoryTools {
   private db: ContextMemoryDatabase;
-  private createMessageCallback?: (messages: any[], options?: any) => Promise<any>;
+  private createMessageCallback?: CreateMessageCallback;
+  private promptMerger: PersonaPromptMerger;
 
   constructor(dbPath?: string) {
     this.db = new ContextMemoryDatabase(dbPath);
+    this.promptMerger = new PersonaPromptMerger(this.db.getDatabase());
   }
 
   /**
    * Set the callback function for creating LLM messages (sampling)
    */
-  setCreateMessageCallback(callback: (messages: any[], options?: any) => Promise<any>): void {
+  setCreateMessageCallback(callback: CreateMessageCallback): void {
     this.createMessageCallback = callback;
   }
 
@@ -366,7 +362,7 @@ export class ContextMemoryTools {
   /**
    * Handle context management operations
    */
-  private async handleContextManage(args: any): Promise<CallToolResult> {
+  private async handleContextManage(args: unknown): Promise<CallToolResult> {
     const input = ContextManageInputSchema.parse(args);
 
     switch (input.action) {
@@ -616,7 +612,7 @@ export class ContextMemoryTools {
   /**
    * Handle personality preset management operations
    */
-  private async handlePersonalityPresetManage(args: any): Promise<CallToolResult> {
+  private async handlePersonalityPresetManage(args: unknown): Promise<CallToolResult> {
     const input = PersonalityPresetManageInputSchema.parse(args);
 
     switch (input.action) {
@@ -831,7 +827,7 @@ export class ContextMemoryTools {
   /**
    * Handle context chat operations
    */
-  private async handleContextChat(args: any): Promise<CallToolResult> {
+  private async handleContextChat(args: unknown): Promise<CallToolResult> {
     const input = ContextChatInputSchema.parse(args);
 
     if (!this.createMessageCallback) {
@@ -870,18 +866,51 @@ export class ContextMemoryTools {
         context.maxHistoryTokens
       );
 
-      // Build messages for LLM
+      // Build messages for LLM with enhanced prompt merging
+      let systemPromptText: string;
+      
+      if (input.maintainPersonality !== false) {
+        // Step4マージ機能: PersonaPromptMergerを使用してプロンプトを最適化
+        try {
+          const basePrompt = `${context.systemPrompt}\n\nPersonality: ${context.personality}`;
+          const mergeResult = await this.promptMerger.mergeSystemPrompt({
+            contextId: input.contextId,
+            userSystemPrompt: basePrompt,
+            taskContext: input.message,
+            compressionConfig: {
+              level: 'light',
+              preserveSecurityConstraints: true,
+              maxTokens: context.maxTokens,
+              compressionStrategy: 'ai_summary'
+            }
+          });
+          
+          // MergeResultかMergeErrorかを判定
+          if ('mergedSystemPrompt' in mergeResult) {
+            systemPromptText = mergeResult.mergedSystemPrompt;
+          } else {
+            // マージ失敗時は従来の方式を使用
+            console.warn('Prompt merge failed, using fallback:', mergeResult.message);
+            systemPromptText = basePrompt;
+          }
+        } catch (error) {
+          // エラー時は従来の方式を使用
+          console.warn('Prompt merge error, using fallback:', error);
+          systemPromptText = `${context.systemPrompt}\n\nPersonality: ${context.personality}`;
+        }
+      } else {
+        systemPromptText = context.systemPrompt;
+      }
+
       const messages = [
         {
           role: 'system' as const,
           content: {
             type: 'text' as const,
-            text: input.maintainPersonality !== false 
-              ? `${context.systemPrompt}\n\nPersonality: ${context.personality}`
-              : context.systemPrompt
+            text: systemPromptText
           }
         },
-        ...conversationHistory.slice(1).map(conv => ({
+        ...conversationHistory.map(conv => ({
           role: conv.role as 'user' | 'assistant',
           content: {
             type: 'text' as const,
@@ -890,13 +919,18 @@ export class ContextMemoryTools {
         }))
       ];
 
-      // Call LLM
-      const response = await this.createMessageCallback(messages, {
+      // Call LLM with proper type conversion
+      const mcpMessages: { role: 'user' | 'assistant' | 'system'; content: string }[] = messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content.text
+      }));
+      
+      const response = await this.createMessageCallback(mcpMessages, {
         maxTokens: context.maxTokens,
         temperature: context.temperature
       });
 
-      const responseText = response.content?.text || 'No response generated';
+      const responseText = (response as { content?: { text?: string } })?.content?.text || 'No response generated';
 
       // Create assistant message
       const assistantMessage = createConversation(input.contextId, 'assistant', responseText);
@@ -925,12 +959,12 @@ export class ContextMemoryTools {
   /**
    * Handle conversation management operations
    */
-  private async handleConversationManage(args: any): Promise<CallToolResult> {
+  private async handleConversationManage(args: unknown): Promise<CallToolResult> {
     const input = ConversationManageInputSchema.parse(args);
 
     switch (input.action) {
       case 'list':
-        return this.handleConversationList(input);
+        return await this.handleConversationList(input);
       case 'delete':
         return this.handleConversationDelete(input);
       case 'clear':
@@ -940,8 +974,8 @@ export class ContextMemoryTools {
     }
   }
 
-  private handleConversationList(input: ConversationManageInput): CallToolResult {
-    const result = this.db.getConversations(input.contextId, {
+  private async handleConversationList(input: ConversationManageInput): Promise<CallToolResult> {
+    const result = await this.db.getConversations(input.contextId, {
       page: input.page || DEFAULT_VALUES.pagination.page,
       pageSize: input.pageSize || DEFAULT_VALUES.pagination.conversationPageSize,
       reverse: input.reverse

@@ -10,7 +10,7 @@ import { z } from 'zod';
 export interface Permission {
   action: string;
   resource: string;
-  conditions?: Record<string, any>;
+  conditions?: Record<string, string | number | boolean | null>; // 修正
 }
 
 export interface PersonaRole {
@@ -96,10 +96,10 @@ export class RBACEngine {
     permissionsToInherit?: Permission[]
   ): Promise<boolean> {
     try {
-      // バリデーション
-      const relation = HierarchyRelationSchema.parse({
+      HierarchyRelationSchema.parse({
         parent_id: parentId,
         child_id: childId,
+        depth: 1,
         permissions_to_inherit: permissionsToInherit
       });
 
@@ -443,7 +443,7 @@ export class RBACEngine {
     contextId: string, 
     action: string, 
     resource: string, 
-    conditions?: Record<string, any>
+    conditions?: Record<string, string | number | boolean | null>
   ): Promise<boolean> {
     try {
       const effectivePerms = await this.getEffectivePermissions(contextId);
@@ -541,3 +541,21 @@ export class RBACEngine {
     console.log('🛑 RBAC Engine disposed');
   }
 }
+
+/**
+ * 修正箇所
+ */
+function processPermissions(data: unknown): Record<string, string> {
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('Invalid data type');
+  }
+  return Object.entries(data as Record<string, string>).reduce((acc: Record<string, string>, [key, value]) => {
+    acc[key] = value;
+    return acc;
+  }, {});
+}
+
+// 使用例
+const permissionsData = { read: 'allowed', write: 'denied' };
+const processedPermissions = processPermissions(permissionsData);
+console.log(processedPermissions);

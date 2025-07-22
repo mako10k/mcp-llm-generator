@@ -12,13 +12,15 @@
 
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import { ContextMemoryIntegration } from "./contextMemory/index.js";
 import { LLMProviderManager } from "./llm/index.js";
 import { registerSharedMemoryTools } from "./tools/shared-memory-integration-v2.js";
+import { SharedMemoryToolsManager } from "./tools/shared-memory-tools.js";
 import { CapabilityAwarenessMCPTools } from "./capability/CapabilityAwarenessMCPTools.js";
-import { SystemPromptMergeEngine } from "./capability/SystemPromptMergeEngine.js";
+import { toMCPSDKMessages } from './contextMemory/types.js';
 import Database from 'better-sqlite3';
 
 // Template structure definition
@@ -124,7 +126,7 @@ const llmManager = new LLMProviderManager({
 let capabilityAwareness: CapabilityAwarenessMCPTools | null = null;
 
 // Global variable for shared memory manager
-let sharedMemoryManager: any = null;
+let sharedMemoryManager: SharedMemoryToolsManager | null = null;
 
 // Sample configurations resource
 server.registerResource(
@@ -258,7 +260,7 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async ({ templateName, args, maxTokens, temperature, includeContext }, extra) => {
+  async ({ templateName, args, maxTokens, temperature, includeContext }, _extra) => {
     try {
       // Expand the template
       const { systemPrompt, userMessage, template } = await expandTemplate(templateName, args);
@@ -461,7 +463,7 @@ const TEMPLATES_DIR = './templates';
 const TEMPLATES_FILE = join(TEMPLATES_DIR, 'templates.json');
 
 // Template file initialization
-async function initializeTemplatesFile() {
+async function initializeTemplatesFile(): Promise<void> {
   try {
     await fs.mkdir(TEMPLATES_DIR, { recursive: true });
     
@@ -520,7 +522,7 @@ server.registerTool(
   },
   async ({ action, name, template }) => {
     try {
-      let templates = await loadTemplatesFromFile();
+      const templates = await loadTemplatesFromFile();
 
       switch (action) {
         case "list":
@@ -561,7 +563,7 @@ server.registerTool(
             }]
           };
 
-        case "update":
+        case "update": {
           if (!name || !template) {
             throw new Error("Template name and data are required for update action");
           }
@@ -584,8 +586,9 @@ server.registerTool(
               }, null, 2)
             }]
           };
+        }
 
-        case "delete":
+        case "delete": {
           if (!name) {
             throw new Error("Template name is required for delete action");
           }
@@ -608,6 +611,7 @@ server.registerTool(
               }, null, 2)
             }]
           };
+        }
 
         default:
           throw new Error(`Unknown action: ${action}`);
@@ -891,8 +895,14 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "context-manage", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "context-manage",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from context-manage tool' }] };
   }
@@ -921,8 +931,14 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "personality-preset-manage", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "personality-preset-manage",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from personality-preset-manage tool' }] };
   }
@@ -943,8 +959,14 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "context-chat", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "context-chat",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from context-chat tool' }] };
   }
@@ -969,15 +991,21 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "conversation-manage", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "conversation-manage",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from conversation-manage tool' }] };
   }
 );
 
 // Step3: Capability Awareness Tools Registration Helper
-async function registerCapabilityAwarenessTools(server: any, capabilityTools: CapabilityAwarenessMCPTools) {
+async function registerCapabilityAwarenessTools(server: McpServer, capabilityTools: CapabilityAwarenessMCPTools): Promise<void> {
   // Self-awareness capability tool
   server.registerTool(
     "persona-inspect-capabilities",
@@ -988,7 +1016,7 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
         context_id: z.string().describe("Context ID of the persona to get capability self-awareness information")
       }
     },
-    async (args: any) => {
+    async (args: { context_id: string }) => {
       const result = await capabilityTools.handleToolCall("persona-inspect-capabilities", args);
       // MCP SDK CallToolResult形式に変換
       return {
@@ -1009,7 +1037,7 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
         target_context_id: z.string().describe("Target persona context ID to observe")
       }
     },
-    async (args: any) => {
+    async (args: { observer_context_id: string; target_context_id: string }) => {
       const result = await capabilityTools.handleToolCall("persona-evaluate-interaction", args);
       // Convert to MCP SDK CallToolResult format
       return {
@@ -1030,7 +1058,7 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
         child_context_id: z.string().describe("Child persona context ID")
       }
     },
-    async (args: any) => {
+    async (args: { parent_context_id: string; child_context_id: string }) => {
       const result = await capabilityTools.handleToolCall("persona-transfer-knowledge", args);
       // Convert to MCP SDK CallToolResult format
       return {
@@ -1051,7 +1079,7 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
         include_inheritance: z.boolean().default(true).describe("Whether to include inheritance relationship information")
       }
     },
-    async (args: any) => {
+    async (args: { context_ids?: string[]; include_inheritance?: boolean }) => {
       const result = await capabilityTools.handleToolCall("group-get-capability-overview", args);
       // Convert to MCP SDK CallToolResult format
       return {
@@ -1071,7 +1099,7 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
         root_context_id: z.string().optional().describe("Root persona ID to start analysis (all hierarchy if omitted)")
       }
     },
-    async (args: any) => {
+    async (args: { root_context_id?: string }) => {
       const result = await capabilityTools.handleToolCall("network-analyze-structure", args);
       // Convert to MCP SDK CallToolResult format
       return {
@@ -1083,7 +1111,7 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
 }
 
 // Server startup
-async function main() {
+async function main(): Promise<void> {
   try {
     // Initialize templates file
     await initializeTemplatesFile();
@@ -1107,8 +1135,27 @@ async function main() {
     }
     
     // Initialize Context Memory System with LLM sampling capability
-    await contextMemory.initialize(server as any, async (messages, options) => {
-      return await server.server.createMessage({ messages, ...options });
+    await contextMemory.initialize(server.server, async (messages, options) => {
+      // Convert MCPMessage to MCP SDK format using type-safe conversion
+      const sdkMessages = toMCPSDKMessages(messages);
+      const convertedMessages = sdkMessages.map(msg => ({
+        role: msg.role, // Type-safe: guaranteed to be 'user' | 'assistant'
+        content: {
+          type: 'text' as const,
+          text: msg.content
+        }
+      }));
+      
+      // Convert options to MCP SDK format with proper typing
+      const createMessageParams: Parameters<typeof server.server.createMessage>[0] = {
+        messages: convertedMessages,
+        maxTokens: 500, // Default value to satisfy required field
+        ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+        ...(options?.temperature !== undefined && { temperature: options.temperature }),
+        ...(options?.stopSequences !== undefined && { stopSequences: options.stopSequences })
+      };
+      
+      return await server.server.createMessage(createMessageParams);
     });
     
     const transport = new StdioServerTransport();

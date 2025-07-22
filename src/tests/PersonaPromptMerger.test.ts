@@ -2,15 +2,19 @@
 // 作成日: 2025年7月22日
 // テスト対象: PersonaPromptMerger基本機能
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { PersonaPromptMerger } from '../utils/PersonaPromptMerger.js';
 import { MergeInputParams } from '../types/promptMerge.js';
+import Database from 'better-sqlite3';
 
 describe('PersonaPromptMerger', () => {
   let merger: PersonaPromptMerger;
+  let db: Database.Database;
 
   beforeEach(() => {
-    merger = new PersonaPromptMerger();
+    // インメモリデータベースでテスト用インスタンスを作成
+    db = new Database(':memory:');
+    merger = new PersonaPromptMerger(db);
   });
 
   describe('基本的なマージ機能', () => {

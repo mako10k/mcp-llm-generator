@@ -167,58 +167,63 @@ export class PersonaLogger {
       });
     }
   }
+
+  /**
+   * エラーログ出力（簡易版）
+   */
+  logError(method: string, operation: string, contextId: string, error: Error): void {
+    const timestamp = new Date().toISOString();
+    console.error(`❌ [${timestamp}] PersonaManager.${method}: Error during ${operation}`, {
+      contextId,
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: this.isDevelopment ? error.stack : undefined
+      }
+    });
+  }
+}
+
+/**
+ * 共通デコレータ関数
+ */
+// 修正: target の型を object に変更
+function createDecorator(operation: string, handler: (method: (...args: unknown[]) => unknown, args: unknown[], logger: PersonaLogger, contextId: string, propertyKey: string) => void): MethodDecorator {
+  return function (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor): void {
+    const method = descriptor.value;
+    const logger = PersonaLogger.getInstance();
+
+    descriptor.value = function (...args: unknown[]): unknown {
+      const contextId = String(args[0] || 'unknown');
+      handler(method, args, logger, contextId, propertyKey.toString());
+      return method.apply(this, args); // 明示的に値を返す
+    };
+  };
 }
 
 /**
  * パフォーマンス測定デコレータ
  */
-export function logPerformance(operation: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
-    const logger = PersonaLogger.getInstance();
-
-    descriptor.value = function (...args: any[]) {
-      const startTime = Date.now();
-      const contextId = args[0] || 'unknown';
-      
-      try {
-        const result = method.apply(this, args);
-        logger.logPerformance(propertyName, operation, startTime, contextId);
-        return result;
-      } catch (error) {
-        logger.logPerformance(propertyName, operation, startTime, contextId);
-        throw error;
-      }
-    };
-  };
-}
+export const logPerformance = (operation: string): MethodDecorator => createDecorator(operation, (method, args, logger, contextId, propertyName) => {
+  const startTime = Date.now();
+  try {
+    const result = method.apply(this, args);
+    logger.logPerformance(propertyName, operation, startTime, contextId);
+    return result;
+  } catch (error) {
+    logger.logPerformance(propertyName, operation, startTime, contextId);
+    throw error;
+  }
+});
 
 /**
  * エラーハンドリングデコレータ
  */
-export function handleErrors(operation: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
-    const logger = PersonaLogger.getInstance();
-
-    descriptor.value = function (...args: any[]) {
-      const contextId = args[0] || 'unknown';
-      
-      try {
-        return method.apply(this, args);
-      } catch (error) {
-        logger.error(
-          `Operation failed: ${operation}`,
-          {
-            method: propertyName,
-            contextId,
-            operation,
-            metadata: { args: args.slice(1) }
-          },
-          error as Error
-        );
-        return null;
-      }
-    };
-  };
-}
+export const handleErrors = (operation: string): MethodDecorator => createDecorator(operation, (method, args, logger, contextId, propertyName) => {
+  try {
+    return method.apply(this, args);
+  } catch (error) {
+    logger.logError(propertyName, operation, contextId, error as Error);
+    throw error;
+  }
+});

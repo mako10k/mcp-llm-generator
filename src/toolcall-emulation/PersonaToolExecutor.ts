@@ -11,6 +11,7 @@ import {
   ToolCallResult
 } from './types.js';
 import { PersonaManager } from '../utils/personaManager.js';
+import { PersonaCapabilities } from '../types/persona.js';
 
 export interface PersonaToolExecutorConfig {
   llmManager: EnhancedLLMManager;
@@ -20,9 +21,20 @@ export interface PersonaToolExecutorConfig {
   maxConcurrentCalls: number;
 }
 
+interface SimulationResponse {
+  tool_name: string;
+  arguments_received: Record<string, unknown>;
+  simulated_result: string;
+  execution_context: {
+    persona_id: string;
+    timestamp: string;
+    reasoning?: string;
+  };
+}
+
 export interface ToolExecutionResult {
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
   executionTime: number;
   toolName: string;
@@ -138,7 +150,7 @@ export class PersonaToolExecutor {
    */
   private enhanceContextWithPersona(
     context: PersonaToolContext,
-    persona: any
+    persona: PersonaCapabilities
   ): PersonaToolContext {
     // 人格の能力に基づいてツールをフィルタリング
     const allowedToolCapabilities = persona.tools || [];
@@ -165,7 +177,7 @@ export class PersonaToolExecutor {
   /**
    * 人格用プロンプト構築
    */
-  private buildPersonaPrompt(persona: any): string {
+  private buildPersonaPrompt(persona: PersonaCapabilities): string {
     return `You are a specialized AI assistant with the following capabilities.
 
 Expertise Areas: ${persona.expertise ? persona.expertise.join(', ') : 'General knowledge'}
@@ -242,7 +254,7 @@ ${context.constraints.forbiddenActions?.length ?
   private async simulateToolCall(
     toolCall: ToolCallResult,
     context: PersonaToolContext
-  ): Promise<any> {
+  ): Promise<SimulationResponse> {
     // Phase 1A では実際のツール実行は行わず、構造化されたシミュレーション結果を返す
     const simulationResponse = {
       tool_name: toolCall.tool_name,
@@ -358,3 +370,37 @@ ${context.constraints.forbiddenActions?.length ?
     };
   }
 }
+
+/**
+ * ツール呼び出し時のパラメータを安全に処理
+ */
+function executeToolCall(tool: Tool, params: Record<string, unknown>): Record<string, unknown> {
+  if (!tool || typeof tool !== 'object') {
+    throw new Error('Invalid tool object');
+  }
+  return Object.entries(params).reduce((acc: Record<string, unknown>, [key, value]) => {
+    acc[key] = value;
+    return acc;
+  }, {});
+}
+
+// 使用例
+const toolExample: Tool = {
+  type: 'function',
+  function: {
+    name: 'exampleTool',
+    description: 'Example tool',
+    parameters: {
+      type: 'object',
+      properties: {
+        key1: { type: 'string', description: 'Example key1' },
+        key2: { type: 'string', description: 'Example key2' }
+      },
+      required: ['key1', 'key2'],
+      additionalProperties: false
+    }
+  }
+};
+const paramsExample = { key1: 'value1', key2: 'value2' };
+const result = executeToolCall(toolExample, paramsExample);
+console.log(result);

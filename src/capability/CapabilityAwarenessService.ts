@@ -9,7 +9,12 @@
 
 import Database from 'better-sqlite3';
 import { z } from 'zod';
-import { DatabaseInitializer } from '../database/DatabaseInitializer';
+import { DatabaseInitializer } from '../database/DatabaseInitializer.js';
+import { 
+  PersonaCapabilityRow, 
+  HierarchyRow, 
+  HierarchyPosition 
+} from './types.js';
 
 // 能力情報のスキーマ定義
 const CapabilitySchema = z.object({
@@ -56,7 +61,7 @@ export type OtherAwarenessInfo = z.infer<typeof OtherAwarenessInfoSchema>;
 
 export class CapabilityAwarenessService {
   private db: Database.Database;
-  private queries: any = {};
+  private queries: Record<string, Database.Statement> = {};
   private dbInitializer: DatabaseInitializer;
 
   constructor(dbPath: string) {
@@ -66,12 +71,12 @@ export class CapabilityAwarenessService {
     this.initializeQueries();
   }
 
-  private initializeTables() {
+  private initializeTables(): void {
     // Use centralized DatabaseInitializer for consistent schema management
     this.dbInitializer.initializeAll();
   }
 
-  private initializeQueries() {
+  private initializeQueries(): void {
     // プリコンパイルクエリの準備
     this.queries = {
       getPersonaCapabilities: this.db.prepare(`
@@ -142,12 +147,12 @@ export class CapabilityAwarenessService {
   async getSelfAwareness(contextId: string): Promise<SelfAwarenessInfo> {
     try {
       // 1. 自身の能力情報を取得
-      let capabilities = this.queries.getPersonaCapabilities.get(contextId);
+      let capabilities = this.queries.getPersonaCapabilities.get(contextId) as PersonaCapabilityRow | undefined;
       
       // If capabilities don't exist, create default entry for new context
       if (!capabilities) {
         await this.createDefaultCapabilities(contextId);
-        capabilities = this.queries.getPersonaCapabilities.get(contextId);
+        capabilities = this.queries.getPersonaCapabilities.get(contextId) as PersonaCapabilityRow;
       }
 
       // 2. 階層位置情報を取得
@@ -229,8 +234,8 @@ export class CapabilityAwarenessService {
       }
 
       // Check for existing circular relationships (if child is already parent of parent)
-      const parentAncestors = this.queries.getAncestors.all(parentContextId);
-      const wouldCreateCircle = parentAncestors.some((ancestor: any) => ancestor.ancestor_id === childContextId);
+      const parentAncestors = this.queries.getAncestors.all(parentContextId) as HierarchyRow[];
+      const wouldCreateCircle = parentAncestors.some((ancestor: HierarchyRow) => ancestor.ancestor_id === childContextId);
       if (wouldCreateCircle) {
         throw new Error('Circular inheritance detected');
       }
@@ -239,18 +244,18 @@ export class CapabilityAwarenessService {
       let parentCapabilities = this.queries.getPersonaCapabilities.get(parentContextId);
       if (!parentCapabilities) {
         await this.createDefaultCapabilities(parentContextId);
-        parentCapabilities = this.queries.getPersonaCapabilities.get(parentContextId);
+        parentCapabilities = this.queries.getPersonaCapabilities.get(parentContextId) as PersonaCapabilityRow;
       }
 
-      let childCapabilities = this.queries.getPersonaCapabilities.get(childContextId);
+      let childCapabilities = this.queries.getPersonaCapabilities.get(childContextId) as PersonaCapabilityRow | undefined;
       if (!childCapabilities) {
         await this.createDefaultCapabilities(childContextId);
-        childCapabilities = this.queries.getPersonaCapabilities.get(childContextId);
+        childCapabilities = this.queries.getPersonaCapabilities.get(childContextId) as PersonaCapabilityRow;
       }
 
       // 1. 親子関係の確認（存在しない場合は作成）
-      const isDirectChild = this.queries.getDirectChildren.get(parentContextId)
-        ?.find((child: any) => child.descendant_id === childContextId);
+      const directChildren = this.queries.getDirectChildren.all(parentContextId) as HierarchyRow[] | undefined;
+      const isDirectChild = directChildren?.find((child: HierarchyRow) => child.descendant_id === childContextId);
       
       if (!isDirectChild) {
         // Create parent-child relationship if it doesn't exist
@@ -259,8 +264,8 @@ export class CapabilityAwarenessService {
 
       // 4. 継承ルールを適用
       const inheritedCapabilities = await this.applyInheritanceRules(
-        parentCapabilities,
-        childCapabilities,
+        parentCapabilities as PersonaCapabilityRow,
+        childCapabilities as PersonaCapabilityRow,
         parentContextId,
         childContextId
       );
@@ -323,13 +328,13 @@ export class CapabilityAwarenessService {
     insertSelfReferenceQuery.run(childContextId, childContextId);
   }
 
-  private async getHierarchyPosition(contextId: string) {
-    const ancestors = this.queries.getAncestors.all(contextId);
-    const descendants = this.queries.getDescendants.all(contextId);
+  private async getHierarchyPosition(contextId: string): Promise<HierarchyPosition> {
+    const ancestors = this.queries.getAncestors.all(contextId) as HierarchyRow[];
+    const descendants = this.queries.getDescendants.all(contextId) as HierarchyRow[];
     
     return {
-      ancestors: ancestors.map((a: any) => a.ancestor_id),
-      descendants: descendants.map((d: any) => d.descendant_id),
+      ancestors: ancestors.map((a: HierarchyRow) => a.ancestor_id),
+      descendants: descendants.map((d: HierarchyRow) => d.descendant_id),
       depth: ancestors.length,
       is_root: ancestors.length === 0,
       is_leaf: descendants.length === 0
@@ -337,11 +342,11 @@ export class CapabilityAwarenessService {
   }
 
   private async getInheritanceSources(contextId: string): Promise<string[]> {
-    const ancestors = this.queries.getAncestors.all(contextId);
-    return ancestors.map((a: any) => a.ancestor_id);
+    const ancestors = this.queries.getAncestors.all(contextId) as HierarchyRow[];
+    return ancestors.map((a: HierarchyRow) => a.ancestor_id);
   }
 
-  private async calculateResponsibilities(contextId: string, hierarchyPosition: any): Promise<string[]> {
+  private async calculateResponsibilities(contextId: string, hierarchyPosition: HierarchyPosition): Promise<string[]> {
     const responsibilities: string[] = [];
     
     if (hierarchyPosition.is_root) {
@@ -359,7 +364,7 @@ export class CapabilityAwarenessService {
     return responsibilities;
   }
 
-  private async calculateConstraints(contextId: string, hierarchyPosition: any): Promise<string[]> {
+  private async calculateConstraints(_contextId: string, hierarchyPosition: HierarchyPosition): Promise<string[]> {
     const constraints: string[] = [];
     
     if (!hierarchyPosition.is_root) {
@@ -373,7 +378,7 @@ export class CapabilityAwarenessService {
     return constraints;
   }
 
-  private async calculateAvailableActions(contextId: string, hierarchyPosition: any): Promise<string[]> {
+  private async calculateAvailableActions(_contextId: string, hierarchyPosition: HierarchyPosition): Promise<string[]> {
     const actions: string[] = [];
     
     actions.push('Self-assessment', 'Capability evaluation');
@@ -390,12 +395,12 @@ export class CapabilityAwarenessService {
   }
 
   private async getObservableCapabilities(observerContextId: string, targetContextId: string): Promise<CapabilityInfo> {
-    let targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId);
+    let targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId) as PersonaCapabilityRow | undefined;
     
     // If target capabilities don't exist, create default entry
     if (!targetCapabilities) {
       await this.createDefaultCapabilities(targetContextId);
-      targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId);
+      targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId) as PersonaCapabilityRow;
     }
 
     // 観察者の権限に基づいて表示可能な情報を制限
@@ -431,24 +436,26 @@ export class CapabilityAwarenessService {
     }
 
     // 直接の親子関係をチェック
-    const isDirectParent = this.queries.getDirectParent.get(targetContextId)?.ancestor_id === observerContextId;
-    const isDirectChild = this.queries.getDirectChildren.get(observerContextId)
-      ?.find((child: any) => child.descendant_id === targetContextId);
+    const directParent = this.queries.getDirectParent.get(targetContextId) as HierarchyRow | undefined;
+    const isDirectParent = directParent?.ancestor_id === observerContextId;
+    
+    const directChildren = this.queries.getDirectChildren.all(observerContextId) as HierarchyRow[] | undefined;
+    const isDirectChild = directChildren?.find((child: HierarchyRow) => child.descendant_id === targetContextId);
     
     if (isDirectParent) return 'parent';
     if (isDirectChild) return 'child';
     
     // 兄弟関係をチェック
-    const siblings = this.queries.getSiblings.all(observerContextId, observerContextId);
-    const isSibling = siblings.find((sibling: any) => sibling.descendant_id === targetContextId);
+    const siblings = this.queries.getSiblings.all(observerContextId, observerContextId) as HierarchyRow[];
+    const isSibling = siblings.find((sibling: HierarchyRow) => sibling.descendant_id === targetContextId);
     if (isSibling) return 'sibling';
     
     // 祖先・子孫関係をチェック
-    const observerAncestors = this.queries.getAncestors.all(observerContextId);
-    const observerDescendants = this.queries.getDescendants.all(observerContextId);
+    const observerAncestors = this.queries.getAncestors.all(observerContextId) as HierarchyRow[];
+    const observerDescendants = this.queries.getDescendants.all(observerContextId) as HierarchyRow[];
     
-    const isAncestor = observerAncestors.find((a: any) => a.ancestor_id === targetContextId);
-    const isDescendant = observerDescendants.find((d: any) => d.descendant_id === targetContextId);
+    const isAncestor = observerAncestors.find((a: HierarchyRow) => a.ancestor_id === targetContextId);
+    const isDescendant = observerDescendants.find((d: HierarchyRow) => d.descendant_id === targetContextId);
     
     if (isAncestor) return 'ancestor';
     if (isDescendant) return 'descendant';
@@ -456,12 +463,14 @@ export class CapabilityAwarenessService {
     return 'unrelated';
   }
 
-  private async getInteractionHistory(observerContextId: string, targetContextId: string): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async getInteractionHistory(_observerContextId: string, _targetContextId: string): Promise<unknown[]> {
     // TODO: タスク委譲履歴などから相互作用履歴を構築
     return [];
   }
 
-  private async generateAssessment(observerContextId: string, targetContextId: string, relationship: string): Promise<{ strengths: string[], limitations: string[], recommended_tasks: string[] }> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async generateAssessment(_observerContextId: string, _targetContextId: string, _relationship: string): Promise<{ strengths: string[], limitations: string[], recommended_tasks: string[] }> {
     // TODO: 関係性と能力情報に基づいて評価を生成
     return {
       strengths: [],
@@ -471,10 +480,11 @@ export class CapabilityAwarenessService {
   }
 
   private async applyInheritanceRules(
-    parentCapabilities: any,
-    childCapabilities: any,
+    parentCapabilities: PersonaCapabilityRow,
+    childCapabilities: PersonaCapabilityRow,
     parentContextId: string,
-    childContextId: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _childContextId: string
   ): Promise<CapabilityInfo> {
     const parentExpertise = this.parseJsonArray(parentCapabilities.expertise);
     const parentTools = this.parseJsonArray(parentCapabilities.tools);

@@ -10,7 +10,7 @@ function safeGetStringArray(array: string[] | undefined): string[] {
 }
 
 export class PromptTokenManager {
-  private encodings: Map<string, any> = new Map();
+  private encodings: Map<string, { encode(text: string): Uint32Array; free(): void }> = new Map();
   
   constructor() {
     // 主要モデルのエンコーディングを事前にロード

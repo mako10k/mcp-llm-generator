@@ -4,11 +4,25 @@
 
 import Database from 'better-sqlite3';
 import { 
-  PromptMergeHistory, 
-  ErrorDetails, 
-  RollbackDetails, 
-  CapabilityInfo 
+  PromptMergeHistory
+  // ErrorDetails, RollbackDetails, CapabilityInfo は将来の実装で使用予定
 } from '../types/promptMerge.js';
+
+// データベース行の型定義
+interface MergeHistoryRow {
+  id: string;
+  context_id: string;
+  timestamp: string;
+  original_user_prompt: string;
+  original_capabilities: string;
+  original_task_context: string;
+  merged_result: string;
+  compression_settings: string;
+  version: number;
+  status: 'pending' | 'success' | 'failed' | 'rolled_back';
+  error_info?: string;
+  rollback_info?: string;
+}
 
 /**
  * Step4マージ機能用のデータベース拡張クラス
@@ -90,28 +104,40 @@ export class PromptMergeDatabase {
    * マージ履歴の取得
    */
   getMergeHistory(id: string): PromptMergeHistory | null {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     const stmt = this.db.prepare(`
-      SELECT * FROM prompt_merge_history WHERE id = ?
+      SELECT * FROM merge_history WHERE id = ?
     `);
-
-    const row = stmt.get(id) as any;
-    if (!row) return null;
-
+    
+    const row = stmt.get(id) as MergeHistoryRow | undefined;
+    
+    if (!row) {
+      return null;
+    }
+    
     return this.mapRowToMergeHistory(row);
   }
 
   /**
    * コンテキストIDによるマージ履歴一覧取得
    */
-  getMergeHistoriesByContext(contextId: string, limit: number = 50): PromptMergeHistory[] {
+  getMergeHistoryByContext(contextId: string, limit: number = 50): PromptMergeHistory[] {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+
     const stmt = this.db.prepare(`
-      SELECT * FROM prompt_merge_history 
+      SELECT * FROM merge_history 
       WHERE context_id = ? 
       ORDER BY timestamp DESC 
       LIMIT ?
     `);
-
-    const rows = stmt.all(contextId, limit) as any[];
+    
+    const rows = stmt.all(contextId, limit) as MergeHistoryRow[];
+    
     return rows.map(row => this.mapRowToMergeHistory(row));
   }
 
@@ -125,7 +151,7 @@ export class PromptMergeDatabase {
       WHERE context_id = ? AND status = 'success'
     `);
 
-    const result = stmt.get(contextId) as any;
+    const result = stmt.get(contextId) as { max_version: number | null } | undefined;
     return result?.max_version || 0;
   }
 
@@ -138,9 +164,12 @@ export class PromptMergeDatabase {
       WHERE context_id = ? AND version = ?
     `);
 
-    const row = stmt.get(contextId, version) as any;
-    if (!row) return null;
-
+    const row = stmt.get(contextId, version) as MergeHistoryRow | undefined;
+    
+    if (!row) {
+      return null;
+    }
+    
     return this.mapRowToMergeHistory(row);
   }
 
@@ -149,7 +178,7 @@ export class PromptMergeDatabase {
    */
   updateMergeHistory(id: string, updates: Partial<PromptMergeHistory>): void {
     const setClause: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (updates.status) {
       setClause.push('status = ?');
@@ -202,7 +231,7 @@ export class PromptMergeDatabase {
   /**
    * データベース行をPromptMergeHistoryオブジェクトにマップ
    */
-  private mapRowToMergeHistory(row: any): PromptMergeHistory {
+  private mapRowToMergeHistory(row: MergeHistoryRow): PromptMergeHistory {
     return {
       id: row.id,
       contextId: row.context_id,

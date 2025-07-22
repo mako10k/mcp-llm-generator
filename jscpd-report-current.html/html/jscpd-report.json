@@ -1,0 +1,1890 @@
+{
+  "statistics": {
+    "detectionDate": "2025-07-22T07:23:26.187Z",
+    "formats": {
+      "typescript": {
+        "sources": {
+          "src/toolcall-emulation/utils/ToolUsageHintGenerator.ts": {
+            "lines": 55,
+            "tokens": 491,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/index.ts": {
+            "lines": 12,
+            "tokens": 73,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/ToolDescriptionBuilder.ts": {
+            "lines": 53,
+            "tokens": 362,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/PromptSectionBuilder.ts": {
+            "lines": 62,
+            "tokens": 337,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/PersonaBuilder.ts": {
+            "lines": 44,
+            "tokens": 259,
+            "sources": 1,
+            "clones": 1,
+            "duplicatedLines": 9,
+            "duplicatedTokens": 52,
+            "percentage": 20.45,
+            "percentageTokens": 20.08,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/ParameterFormatter.ts": {
+            "lines": 84,
+            "tokens": 572,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 31,
+            "duplicatedTokens": 304,
+            "percentage": 36.9,
+            "percentageTokens": 53.15,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/OutputSchemaBuilder.ts": {
+            "lines": 56,
+            "tokens": 134,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/ExampleBuilder.ts": {
+            "lines": 65,
+            "tokens": 155,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/ContextBuilder.ts": {
+            "lines": 57,
+            "tokens": 464,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/prompt-builders/ConstraintBuilder.ts": {
+            "lines": 67,
+            "tokens": 479,
+            "sources": 1,
+            "clones": 1,
+            "duplicatedLines": 15,
+            "duplicatedTokens": 156,
+            "percentage": 22.39,
+            "percentageTokens": 32.57,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/contextMemory/utils/index.ts": {
+            "lines": 528,
+            "tokens": 4476,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 28,
+            "duplicatedTokens": 346,
+            "percentage": 5.3,
+            "percentageTokens": 7.73,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/contextMemory/utils/database.ts": {
+            "lines": 710,
+            "tokens": 4131,
+            "sources": 1,
+            "clones": 4,
+            "duplicatedLines": 50,
+            "duplicatedTokens": 444,
+            "percentage": 7.04,
+            "percentageTokens": 10.75,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/contextMemory/types/index.ts": {
+            "lines": 290,
+            "tokens": 1885,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/contextMemory/types/database-types.ts": {
+            "lines": 100,
+            "tokens": 482,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/capability/types/conflict-types.ts": {
+            "lines": 47,
+            "tokens": 217,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/promptSecurity.ts": {
+            "lines": 317,
+            "tokens": 2521,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/promptOptimization.ts": {
+            "lines": 392,
+            "tokens": 3327,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/personaLogger.ts": {
+            "lines": 223,
+            "tokens": 1668,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 12,
+            "duplicatedTokens": 172,
+            "percentage": 5.38,
+            "percentageTokens": 10.31,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/googleSearchFunction.ts": {
+            "lines": 229,
+            "tokens": 1706,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/functionRegistry.ts": {
+            "lines": 720,
+            "tokens": 4477,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/functionExecutionEngine.ts": {
+            "lines": 511,
+            "tokens": 4599,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/functionCallDispatcher.ts": {
+            "lines": 405,
+            "tokens": 2766,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/TransactionManager.ts": {
+            "lines": 188,
+            "tokens": 1154,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/PromptMergeDatabase.ts": {
+            "lines": 264,
+            "tokens": 1488,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/PersonaPromptMerger.ts": {
+            "lines": 289,
+            "tokens": 2053,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/OriginalDataManager.ts": {
+            "lines": 289,
+            "tokens": 1707,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/utils/ConflictDetector.ts": {
+            "lines": 302,
+            "tokens": 1740,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/tool.ts": {
+            "lines": 34,
+            "tokens": 196,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/promptMerge.ts": {
+            "lines": 120,
+            "tokens": 703,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/prompt.ts": {
+            "lines": 60,
+            "tokens": 359,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/persona.ts": {
+            "lines": 264,
+            "tokens": 1817,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/mcp-tool-definitions.ts": {
+            "lines": 35,
+            "tokens": 149,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/mcp-responses.ts": {
+            "lines": 98,
+            "tokens": 742,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/types/llm-manager.ts": {
+            "lines": 47,
+            "tokens": 220,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tools/shared-memory-tools.ts": {
+            "lines": 378,
+            "tokens": 2541,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tools/shared-memory-integration-v2.ts": {
+            "lines": 219,
+            "tokens": 1543,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/types.ts": {
+            "lines": 99,
+            "tokens": 819,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/SystemPromptGeneratorV2.ts": {
+            "lines": 272,
+            "tokens": 1761,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 33,
+            "duplicatedTokens": 244,
+            "percentage": 12.13,
+            "percentageTokens": 13.86,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/SystemPromptGenerator.ts": {
+            "lines": 518,
+            "tokens": 2801,
+            "sources": 1,
+            "clones": 5,
+            "duplicatedLines": 65,
+            "duplicatedTokens": 537,
+            "percentage": 12.55,
+            "percentageTokens": 19.17,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/ResponseParser.ts": {
+            "lines": 509,
+            "tokens": 3801,
+            "sources": 1,
+            "clones": 4,
+            "duplicatedLines": 58,
+            "duplicatedTokens": 350,
+            "percentage": 11.39,
+            "percentageTokens": 9.21,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/PersonaToolExecutor.ts": {
+            "lines": 359,
+            "tokens": 2530,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/toolcall-emulation/EnhancedLLMManager.ts": {
+            "lines": 313,
+            "tokens": 2230,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tests/PersonaPromptMerger.test.ts": {
+            "lines": 118,
+            "tokens": 984,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/tests/ParameterFormatter.test.ts": {
+            "lines": 172,
+            "tokens": 1352,
+            "sources": 1,
+            "clones": 1,
+            "duplicatedLines": 23,
+            "duplicatedTokens": 219,
+            "percentage": 13.37,
+            "percentageTokens": 16.2,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/rbac/RBACMCPTools.ts": {
+            "lines": 702,
+            "tokens": 5060,
+            "sources": 1,
+            "clones": 2,
+            "duplicatedLines": 22,
+            "duplicatedTokens": 182,
+            "percentage": 3.13,
+            "percentageTokens": 3.6,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/rbac/RBACEngine.ts": {
+            "lines": 542,
+            "tokens": 3714,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/rbac/RBACAPIService.ts": {
+            "lines": 467,
+            "tokens": 3637,
+            "sources": 1,
+            "clones": 4,
+            "duplicatedLines": 20,
+            "duplicatedTokens": 296,
+            "percentage": 4.28,
+            "percentageTokens": 8.14,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/rbac/PersonaRBACIntegration.ts": {
+            "lines": 365,
+            "tokens": 2957,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/llm/index.ts": {
+            "lines": 8,
+            "tokens": 74,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/llm/StreamingUtils.ts": {
+            "lines": 73,
+            "tokens": 504,
+            "sources": 1,
+            "clones": 1,
+            "duplicatedLines": 10,
+            "duplicatedTokens": 86,
+            "percentage": 13.7,
+            "percentageTokens": 17.06,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/llm/OpenAIProvider.ts": {
+            "lines": 217,
+            "tokens": 1848,
+            "sources": 1,
+            "clones": 6,
+            "duplicatedLines": 71,
+            "duplicatedTokens": 653,
+            "percentage": 32.72,
+            "percentageTokens": 35.34,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/llm/LLMProviderManager.ts": {
+            "lines": 208,
+            "tokens": 1619,
+            "sources": 1,
+            "clones": 4,
+            "duplicatedLines": 30,
+            "duplicatedTokens": 344,
+            "percentage": 14.42,
+            "percentageTokens": 21.25,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/llm/LLMProvider.ts": {
+            "lines": 125,
+            "tokens": 891,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/llm/ClaudeProvider.ts": {
+            "lines": 211,
+            "tokens": 1885,
+            "sources": 1,
+            "clones": 5,
+            "duplicatedLines": 71,
+            "duplicatedTokens": 685,
+            "percentage": 33.65,
+            "percentageTokens": 36.34,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/database/migrate_rbac_manual.ts": {
+            "lines": 230,
+            "tokens": 1699,
+            "sources": 1,
+            "clones": 5,
+            "duplicatedLines": 124,
+            "duplicatedTokens": 952,
+            "percentage": 53.91,
+            "percentageTokens": 56.03,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/database/migrate_rbac.ts": {
+            "lines": 219,
+            "tokens": 1919,
+            "sources": 1,
+            "clones": 5,
+            "duplicatedLines": 124,
+            "duplicatedTokens": 952,
+            "percentage": 56.62,
+            "percentageTokens": 49.61,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/database/init.ts": {
+            "lines": 228,
+            "tokens": 1738,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/database/DatabaseInitializer.ts": {
+            "lines": 337,
+            "tokens": 1281,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/core/shared-memory-core.ts": {
+            "lines": 455,
+            "tokens": 3039,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/contextMemory/types.ts": {
+            "lines": 39,
+            "tokens": 159,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/contextMemory/index.ts": {
+            "lines": 127,
+            "tokens": 745,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/capability/types.ts": {
+            "lines": 83,
+            "tokens": 528,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/capability/SystemPromptMergeEngine.ts": {
+            "lines": 274,
+            "tokens": 1891,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/capability/CapabilityAwarenessService.ts": {
+            "lines": 538,
+            "tokens": 4366,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/capability/CapabilityAwarenessMCPTools.ts": {
+            "lines": 303,
+            "tokens": 2335,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/step4-merge-api.ts": {
+            "lines": 52,
+            "tokens": 140,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          }
+        },
+        "total": {
+          "lines": 15777,
+          "tokens": 110300,
+          "sources": 66,
+          "clones": 28,
+          "duplicatedLines": 398,
+          "duplicatedTokens": 3487,
+          "percentage": 2.52,
+          "percentageTokens": 3.16,
+          "newDuplicatedLines": 0,
+          "newClones": 0
+        }
+      },
+      "sql": {
+        "sources": {
+          "src/migrations/001_sprint4_persona_capabilities.sql": {
+            "lines": 109,
+            "tokens": 1346,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/database/rbac_extension_schema.sql": {
+            "lines": 146,
+            "tokens": 1254,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "src/database/persona_schema.sql": {
+            "lines": 150,
+            "tokens": 1715,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          }
+        },
+        "total": {
+          "lines": 405,
+          "tokens": 4315,
+          "sources": 3,
+          "clones": 0,
+          "duplicatedLines": 0,
+          "duplicatedTokens": 0,
+          "percentage": 0,
+          "percentageTokens": 0,
+          "newDuplicatedLines": 0,
+          "newClones": 0
+        }
+      }
+    },
+    "total": {
+      "lines": 16182,
+      "tokens": 114615,
+      "sources": 69,
+      "clones": 28,
+      "duplicatedLines": 398,
+      "duplicatedTokens": 3487,
+      "percentage": 2.46,
+      "percentageTokens": 3.04,
+      "newDuplicatedLines": 0,
+      "newClones": 0
+    }
+  },
+  "duplicates": [
+    {
+      "format": "typescript",
+      "lines": 15,
+      "fragment": "(input: unknown): { isValid: boolean; errors: string[] } {\n  const errors: string[] = [];\n\n  // Type guard to check if input is an object\n  if (!input || typeof input !== 'object') {\n    return { isValid: false, errors: ['Input must be an object'] };\n  }\n\n  const inputObj = input as Record<string, unknown>;\n\n  if (!inputObj.name || typeof inputObj.name !== 'string' || inputObj.name.trim().length === 0) {\n    errors.push('Name is required and must be a non-empty string');\n  }\n\n  if (!inputObj.description",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/contextMemory/utils/index.ts",
+        "start": 416,
+        "end": 430,
+        "startLoc": {
+          "line": 416,
+          "column": 20,
+          "position": 3551
+        },
+        "endLoc": {
+          "line": 430,
+          "column": 12,
+          "position": 3724
+        }
+      },
+      "secondFile": {
+        "name": "src/contextMemory/utils/index.ts",
+        "start": 376,
+        "end": 390,
+        "startLoc": {
+          "line": 376,
+          "column": 21,
+          "position": 3082
+        },
+        "endLoc": {
+          "line": 390,
+          "column": 13,
+          "position": 3255
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 15,
+      "fragment": "[];\n    totalCount: number;\n    page: number;\n    pageSize: number;\n    hasNext: boolean;\n    hasPrev: boolean;\n  } {\n    const page = options.page || 1;\n    const pageSize = options.pageSize || 10;\n\n    // Build WHERE clause based on filters\n    const whereClauses: string[] = [];\n    const params: (string | number)[] = [];\n\n    if (!options.includeInactive",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/contextMemory/utils/database.ts",
+        "start": 533,
+        "end": 547,
+        "startLoc": {
+          "line": 533,
+          "column": 18,
+          "position": 2913
+        },
+        "endLoc": {
+          "line": 547,
+          "column": 16,
+          "position": 3039
+        }
+      },
+      "secondFile": {
+        "name": "src/contextMemory/utils/database.ts",
+        "start": 258,
+        "end": 272,
+        "startLoc": {
+          "line": 258,
+          "column": 8,
+          "position": 1082
+        },
+        "endLoc": {
+          "line": 272,
+          "column": 15,
+          "position": 1208
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 12,
+      "fragment": ");\n    }\n\n    if (options.nameSearch) {\n      whereClauses.push('name LIKE ?');\n      params.push(`%${options.nameSearch}%`);\n    }\n\n    const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';\n\n    // Get total count\n    const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM personality_presets ",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/contextMemory/utils/database.ts",
+        "start": 548,
+        "end": 559,
+        "startLoc": {
+          "line": 548,
+          "column": 16,
+          "position": 3050
+        },
+        "endLoc": {
+          "line": 559,
+          "column": 52,
+          "position": 3146
+        }
+      },
+      "secondFile": {
+        "name": "src/contextMemory/utils/database.ts",
+        "start": 278,
+        "end": 289,
+        "startLoc": {
+          "line": 278,
+          "column": 2,
+          "position": 1266
+        },
+        "endLoc": {
+          "line": 289,
+          "column": 41,
+          "position": 1362
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 7,
+      "fragment": "(operation: string) {\n  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {\n    const method = descriptor.value;\n    const logger = PersonaLogger.getInstance();\n\n    descriptor.value = function (...args: any[]) {\n      const contextId",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/utils/personaLogger.ts",
+        "start": 199,
+        "end": 205,
+        "startLoc": {
+          "line": 199,
+          "column": 13,
+          "position": 1454
+        },
+        "endLoc": {
+          "line": 205,
+          "column": 10,
+          "position": 1540
+        }
+      },
+      "secondFile": {
+        "name": "src/utils/personaLogger.ts",
+        "start": 175,
+        "end": 181,
+        "startLoc": {
+          "line": 175,
+          "column": 15,
+          "position": 1235
+        },
+        "endLoc": {
+          "line": 181,
+          "column": 10,
+          "position": 1321
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 9,
+      "fragment": "const allParams = { ...parameters.properties };\n    const formatted: string[] = [];\n\n    // 必須パラメータ\n    if (requiredParams.length > 0) {\n      formatted.push('**Required**:');\n      requiredParams.forEach(param => {\n        const paramDef = allParams[param];\n        formatted",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/SystemPromptGenerator.ts",
+        "start": 209,
+        "end": 217,
+        "startLoc": {
+          "line": 209,
+          "column": 5,
+          "position": 1085
+        },
+        "endLoc": {
+          "line": 217,
+          "column": 10,
+          "position": 1170
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/prompt-builders/ParameterFormatter.ts",
+        "start": 18,
+        "end": 26,
+        "startLoc": {
+          "line": 18,
+          "column": 5,
+          "position": 55
+        },
+        "endLoc": {
+          "line": 26,
+          "column": 3,
+          "position": 140
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 10,
+      "fragment": "`## Persona Context\n\nYou are operating with the following capabilities and constraints:\n\n**Expertise Areas**: ${persona.expertise?.join(', ') || 'General'}\n**Available Tools**: ${persona.tools?.join(', ') || 'All available'}\n**Restrictions**: ${persona.restrictions?.join(', ') || 'None'}\n\nAdapt your tool selection and reasoning to align with these persona characteristics.`;\n  }",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/SystemPromptGenerator.ts",
+        "start": 344,
+        "end": 353,
+        "startLoc": {
+          "line": 344,
+          "column": 2,
+          "position": 1539
+        },
+        "endLoc": {
+          "line": 353,
+          "column": 2,
+          "position": 1591
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/prompt-builders/PersonaBuilder.ts",
+        "start": 29,
+        "end": 39,
+        "startLoc": {
+          "line": 29,
+          "column": 2,
+          "position": 171
+        },
+        "endLoc": {
+          "line": 39,
+          "column": 7,
+          "position": 224
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 16,
+      "fragment": "(context: PromptContext): string {\n    const constraints: string[] = [];\n\n    if (context.constraints?.maxTokens) {\n      constraints.push(`- Maximum response tokens: ${context.constraints.maxTokens}`);\n    }\n\n    if (context.constraints?.allowedActions?.length) {\n      constraints.push(`- Allowed actions: ${context.constraints.allowedActions.join(', ')}`);\n    }\n\n    if (context.constraints?.forbiddenActions?.length) {\n      constraints.push(`- Forbidden actions: ${context.constraints.forbiddenActions.join(', ')}`);\n    }\n\n    if (this.config",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/SystemPromptGenerator.ts",
+        "start": 358,
+        "end": 373,
+        "startLoc": {
+          "line": 358,
+          "column": 20,
+          "position": 1601
+        },
+        "endLoc": {
+          "line": 373,
+          "column": 7,
+          "position": 1757
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/prompt-builders/ConstraintBuilder.ts",
+        "start": 32,
+        "end": 47,
+        "startLoc": {
+          "line": 32,
+          "column": 6,
+          "position": 183
+        },
+        "endLoc": {
+          "line": 47,
+          "column": 11,
+          "position": 339
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 10,
+      "fragment": ".reduce((complexity, tool) => {\n      const paramCount = Object.keys(tool.function.parameters.properties || {}).length;\n      const requiredCount = tool.function.parameters.required?.length || 0;\n      return complexity + paramCount + (requiredCount * 0.5);\n    }, 0);\n  }\n\n  /**\n   * プロンプトの切り詰め\n   */",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/SystemPromptGenerator.ts",
+        "start": 459,
+        "end": 468,
+        "startLoc": {
+          "line": 459,
+          "column": 6,
+          "position": 2373
+        },
+        "endLoc": {
+          "line": 468,
+          "column": 6,
+          "position": 2471
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/SystemPromptGeneratorV2.ts",
+        "start": 43,
+        "end": 49,
+        "startLoc": {
+          "line": 43,
+          "column": 15,
+          "position": 206
+        },
+        "endLoc": {
+          "line": 49,
+          "column": 2,
+          "position": 302
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 25,
+      "fragment": ";\n  }\n\n  /**\n   * プロンプトの切り詰め\n   */\n  private truncatePrompt(prompt: string): string {\n    const lines = prompt.split('\\n');\n    let truncated = '';\n    \n    for (const line of lines) {\n      if (truncated.length + line.length + 1 <= this.config.contextLengthLimit) {\n        truncated += line + '\\n';\n      } else {\n        truncated += '\\n... (truncated for length)';\n        break;\n      }\n    }\n    \n    return truncated;\n  }\n\n  /**\n   * テンプレートの初期化\n   */",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/SystemPromptGenerator.ts",
+        "start": 463,
+        "end": 487,
+        "startLoc": {
+          "line": 463,
+          "column": 2,
+          "position": 2464
+        },
+        "endLoc": {
+          "line": 487,
+          "column": 6,
+          "position": 2610
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/SystemPromptGeneratorV2.ts",
+        "start": 205,
+        "end": 229,
+        "startLoc": {
+          "line": 205,
+          "column": 120,
+          "position": 1227
+        },
+        "endLoc": {
+          "line": 229,
+          "column": 6,
+          "position": 1373
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 15,
+      "fragment": "const jsonData = this.parseJSON(rawContent);\n      if (!jsonData.success) {\n        return {\n          success: false,\n          errors: jsonData.errors,\n          metadata: {\n            rawContent,\n            parseTime: Date.now() - startTime,\n            confidence: 0,\n            retryCount\n          }\n        };\n      }\n\n      const",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/ResponseParser.ts",
+        "start": 170,
+        "end": 184,
+        "startLoc": {
+          "line": 170,
+          "column": 7,
+          "position": 1141
+        },
+        "endLoc": {
+          "line": 184,
+          "column": 6,
+          "position": 1235
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/ResponseParser.ts",
+        "start": 91,
+        "end": 105,
+        "startLoc": {
+          "line": 91,
+          "column": 7,
+          "position": 598
+        },
+        "endLoc": {
+          "line": 105,
+          "column": 10,
+          "position": 692
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 16,
+      "fragment": "${error instanceof Error ? error.message : String(error)}`,\n          severity: 'error'\n        }],\n        metadata: {\n          rawContent,\n          parseTime: Date.now() - startTime,\n          confidence: 0,\n          retryCount\n        }\n      };\n    }\n  }\n\n  /**\n   * Refusal検出\n   */",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/toolcall-emulation/ResponseParser.ts",
+        "start": 203,
+        "end": 218,
+        "startLoc": {
+          "line": 203,
+          "column": 24,
+          "position": 1383
+        },
+        "endLoc": {
+          "line": 218,
+          "column": 6,
+          "position": 1464
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/ResponseParser.ts",
+        "start": 145,
+        "end": 160,
+        "startLoc": {
+          "line": 145,
+          "column": 28,
+          "position": 958
+        },
+        "endLoc": {
+          "line": 160,
+          "column": 6,
+          "position": 1039
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 24,
+      "fragment": "{\n        const allParams = { ...parameters.properties };\n        const formatted: string[] = [];\n\n        // 必須パラメータ\n        if (requiredParams.length > 0) {\n          formatted.push('**Required**:');\n          requiredParams.forEach(param => {\n            const paramDef = allParams[param];\n            formatted.push(`- \\`${param}\\` (${paramDef.type}): ${paramDef.description}`);\n          });\n        }\n\n        // オプショナルパラメータ\n        if (optionalParams.length > 0) {\n          formatted.push('**Optional**:');\n          optionalParams.forEach(param => {\n            const paramDef = allParams[param];\n            formatted.push(`- \\`${param}\\` (${paramDef.type}): ${paramDef.description}`);\n          });\n        }\n\n        return formatted.join('\\n');\n      };",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/tests/ParameterFormatter.test.ts",
+        "start": 140,
+        "end": 163,
+        "startLoc": {
+          "line": 140,
+          "column": 2,
+          "position": 1041
+        },
+        "endLoc": {
+          "line": 163,
+          "column": 2,
+          "position": 1260
+        }
+      },
+      "secondFile": {
+        "name": "src/toolcall-emulation/prompt-builders/ParameterFormatter.ts",
+        "start": 17,
+        "end": 235,
+        "startLoc": {
+          "line": 17,
+          "column": 2,
+          "position": 52
+        },
+        "endLoc": {
+          "line": 235,
+          "column": 6,
+          "position": 1304
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 12,
+      "fragment": ",\n          items: {\n            type: 'object',\n            properties: {\n              action: { type: 'string' },\n              resource: { type: 'string' },\n              conditions: { type: 'object', additionalProperties: true }\n            },\n            required: ['action', 'resource']\n          }\n        },\n        recalculate_inheritance",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/rbac/RBACMCPTools.ts",
+        "start": 166,
+        "end": 177,
+        "startLoc": {
+          "line": 166,
+          "column": 41,
+          "position": 979
+        },
+        "endLoc": {
+          "line": 177,
+          "column": 24,
+          "position": 1070
+        }
+      },
+      "secondFile": {
+        "name": "src/rbac/RBACMCPTools.ts",
+        "start": 153,
+        "end": 164,
+        "startLoc": {
+          "line": 153,
+          "column": 36,
+          "position": 870
+        },
+        "endLoc": {
+          "line": 164,
+          "column": 22,
+          "position": 961
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 6,
+      "fragment": ": z.array(z.object({\n    action: z.string().min(1),\n    resource: z.string().min(1),\n    conditions: z.record(z.any()).optional()\n  })).optional(),\n  permissions_to_remove",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/rbac/RBACAPIService.ts",
+        "start": 117,
+        "end": 122,
+        "startLoc": {
+          "line": 117,
+          "column": 19,
+          "position": 844
+        },
+        "endLoc": {
+          "line": 122,
+          "column": 22,
+          "position": 918
+        }
+      },
+      "secondFile": {
+        "name": "src/rbac/RBACAPIService.ts",
+        "start": 100,
+        "end": 105,
+        "startLoc": {
+          "line": 100,
+          "column": 23,
+          "position": 633
+        },
+        "endLoc": {
+          "line": 105,
+          "column": 9,
+          "position": 707
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 6,
+      "fragment": ": z.array(z.object({\n    action: z.string().min(1),\n    resource: z.string().min(1),\n    conditions: z.record(z.any()).optional()\n  })).optional(),\n  recalculate_inheritance",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/rbac/RBACAPIService.ts",
+        "start": 122,
+        "end": 127,
+        "startLoc": {
+          "line": 122,
+          "column": 22,
+          "position": 919
+        },
+        "endLoc": {
+          "line": 127,
+          "column": 24,
+          "position": 993
+        }
+      },
+      "secondFile": {
+        "name": "src/rbac/RBACAPIService.ts",
+        "start": 100,
+        "end": 105,
+        "startLoc": {
+          "line": 100,
+          "column": 23,
+          "position": 633
+        },
+        "endLoc": {
+          "line": 105,
+          "column": 9,
+          "position": 707
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 10,
+      "fragment": "<LLMResponse> {\n    try {\n      const response = await this.makeRequest('/chat/completions', {\n        model: options.model || this.defaultModel,\n        messages: this.formatMessages(messages),\n        max_tokens: options.maxTokens || 1000,\n        temperature: options.temperature ?? 0.7,\n        top_p: options.topP,\n        stop: options.stop,\n        stream: true",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/OpenAIProvider.ts",
+        "start": 99,
+        "end": 108,
+        "startLoc": {
+          "line": 99,
+          "column": 14,
+          "position": 777
+        },
+        "endLoc": {
+          "line": 108,
+          "column": 5,
+          "position": 882
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/OpenAIProvider.ts",
+        "start": 47,
+        "end": 56,
+        "startLoc": {
+          "line": 47,
+          "column": 8,
+          "position": 328
+        },
+        "endLoc": {
+          "line": 56,
+          "column": 6,
+          "position": 433
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 11,
+      "fragment": ");\n        buffer = lines.pop() || '';\n\n        for (const line of lines) {\n          if (line.startsWith('data: ')) {\n            const data = line.slice(6);\n            if (data === '[DONE]') {\n              return;\n            }\n\n            try",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/OpenAIProvider.ts",
+        "start": 118,
+        "end": 128,
+        "startLoc": {
+          "line": 118,
+          "column": 6,
+          "position": 990
+        },
+        "endLoc": {
+          "line": 128,
+          "column": 4,
+          "position": 1076
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/StreamingUtils.ts",
+        "start": 33,
+        "end": 43,
+        "startLoc": {
+          "line": 33,
+          "column": 5,
+          "position": 220
+        },
+        "endLoc": {
+          "line": 43,
+          "column": 6,
+          "position": 306
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 8,
+      "fragment": "[],\n    options: LLMRequestOptions & { provider?: string } = {}\n  ): Promise<LLMResponse> {\n    const { provider: providerName, ...llmOptions } = options;\n    \n    const provider = this.getProvider(providerName);\n    if (!provider) {\n      throw",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/LLMProviderManager.ts",
+        "start": 132,
+        "end": 139,
+        "startLoc": {
+          "line": 132,
+          "column": 4,
+          "position": 1020
+        },
+        "endLoc": {
+          "line": 139,
+          "column": 6,
+          "position": 1107
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/LLMProviderManager.ts",
+        "start": 89,
+        "end": 96,
+        "startLoc": {
+          "line": 89,
+          "column": 8,
+          "position": 660
+        },
+        "endLoc": {
+          "line": 96,
+          "column": 6,
+          "position": 747
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 9,
+      "fragment": "<LLMResponse> {\n    const { provider: providerName, ...llmOptions } = options;\n    \n    const provider = this.getProvider(providerName);\n    if (!provider) {\n      throw new Error(`Provider '${providerName || this.defaultProvider}' not available`);\n    }\n\n    if (!provider.supportsToolCalling",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/LLMProviderManager.ts",
+        "start": 134,
+        "end": 142,
+        "startLoc": {
+          "line": 134,
+          "column": 8,
+          "position": 1052
+        },
+        "endLoc": {
+          "line": 142,
+          "column": 20,
+          "position": 1137
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/LLMProviderManager.ts",
+        "start": 112,
+        "end": 120,
+        "startLoc": {
+          "line": 112,
+          "column": 14,
+          "position": 867
+        },
+        "endLoc": {
+          "line": 120,
+          "column": 22,
+          "position": 952
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 15,
+      "fragment": "}\n      };\n    } catch (error) {\n      this.handleError(error, 'generateMessage');\n    }\n  }\n\n  async generateWithTools(\n    messages: Message[],\n    tools: any[],\n    options: LLMRequestOptions = {}\n  ): Promise<LLMResponse> {\n    return this.generateMessage(messages, {\n      ...options,\n      tools: tools",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/ClaudeProvider.ts",
+        "start": 80,
+        "end": 94,
+        "startLoc": {
+          "line": 80,
+          "column": 9,
+          "position": 674
+        },
+        "endLoc": {
+          "line": 94,
+          "column": 6,
+          "position": 777
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/OpenAIProvider.ts",
+        "start": 77,
+        "end": 91,
+        "startLoc": {
+          "line": 77,
+          "column": 9,
+          "position": 613
+        },
+        "endLoc": {
+          "line": 91,
+          "column": 5,
+          "position": 716
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 15,
+      "fragment": "<LLMResponse> {\n    try {\n      const { system, messages: formattedMessages } = this.formatMessages(messages);\n      \n      const response = await this.makeRequest('/v1/messages', {\n        model: options.model || this.defaultModel,\n        max_tokens: options.maxTokens || 1000,\n        temperature: options.temperature ?? 0.7,\n        top_p: options.topP,\n        stop_sequences: options.stop,\n        system,\n        messages: formattedMessages,\n        tools: options.tools ? this.formatTools(options.tools) : undefined,\n        tool_choice: options.toolChoice,\n        stream: true",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/ClaudeProvider.ts",
+        "start": 102,
+        "end": 116,
+        "startLoc": {
+          "line": 102,
+          "column": 14,
+          "position": 840
+        },
+        "endLoc": {
+          "line": 116,
+          "column": 5,
+          "position": 1004
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/ClaudeProvider.ts",
+        "start": 47,
+        "end": 61,
+        "startLoc": {
+          "line": 47,
+          "column": 8,
+          "position": 332
+        },
+        "endLoc": {
+          "line": 61,
+          "column": 6,
+          "position": 496
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 15,
+      "fragment": "}, true);\n\n      let buffer = '';\n      const decoder = new TextDecoder();\n\n      for await (const chunk of response.body) {\n        buffer += decoder.decode(chunk, { stream: true });\n        const lines = buffer.split('\\\\n');\n        buffer = lines.pop() || '';\n\n        for (const line of lines) {\n          if (line.startsWith('data: ')) {\n            const data = line.slice(6);\n            \n            try",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/ClaudeProvider.ts",
+        "start": 117,
+        "end": 131,
+        "startLoc": {
+          "line": 117,
+          "column": 7,
+          "position": 1007
+        },
+        "endLoc": {
+          "line": 131,
+          "column": 4,
+          "position": 1161
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/OpenAIProvider.ts",
+        "start": 111,
+        "end": 124,
+        "startLoc": {
+          "line": 111,
+          "column": 7,
+          "position": 903
+        },
+        "endLoc": {
+          "line": 124,
+          "column": 3,
+          "position": 1055
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 16,
+      "fragment": "${response.status} ${response.statusText}`);\n      (error as any).response = {\n        status: response.status,\n        statusText: response.statusText,\n        body: errorBody\n      };\n      throw error;\n    }\n\n    if (stream) {\n      return response;\n    }\n\n    return response.json();\n  }\n}",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/llm/ClaudeProvider.ts",
+        "start": 197,
+        "end": 212,
+        "startLoc": {
+          "line": 197,
+          "column": 20,
+          "position": 1785
+        },
+        "endLoc": {
+          "line": 212,
+          "column": 2,
+          "position": 1885
+        }
+      },
+      "secondFile": {
+        "name": "src/llm/OpenAIProvider.ts",
+        "start": 203,
+        "end": 218,
+        "startLoc": {
+          "line": 203,
+          "column": 20,
+          "position": 1748
+        },
+        "endLoc": {
+          "line": 218,
+          "column": 2,
+          "position": 1848
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 33,
+      "fragment": ";\nimport { join, dirname } from 'path';\nimport { fileURLToPath } from 'url';\n\nconst __filename = fileURLToPath(import.meta.url);\nconst __dirname = dirname(__filename);\n\ninterface MigrationResult {\n  success: boolean;\n  tablesCreated: number;\n  columnsAdded: number;\n  indexesCreated: number;\n  viewsCreated: number;\n  triggersCreated: number;\n  errors: string[];\n}\n\nasync function runRBACMigration(): Promise<MigrationResult> {\n  console.log('🚀 Phase 1: RBAC データベースマイグレーション開始');\n  \n  const result: MigrationResult = {\n    success: false,\n    tablesCreated: 0,\n    columnsAdded: 0,\n    indexesCreated: 0,\n    viewsCreated: 0,\n    triggersCreated: 0,\n    errors: []\n  };\n\n  try {\n    // データベース接続\n    const dbPath = join(__dirname, '../../persona.db'",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/database/migrate_rbac.ts",
+        "start": 8,
+        "end": 40,
+        "startLoc": {
+          "line": 8,
+          "column": 5,
+          "position": 34
+        },
+        "endLoc": {
+          "line": 40,
+          "column": 19,
+          "position": 268
+        }
+      },
+      "secondFile": {
+        "name": "src/database/migrate_rbac_manual.ts",
+        "start": 7,
+        "end": 39,
+        "startLoc": {
+          "line": 7,
+          "column": 17,
+          "position": 21
+        },
+        "endLoc": {
+          "line": 39,
+          "column": 22,
+          "position": 255
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 14,
+      "fragment": ");\n    \n    // 既存テーブル確認\n    const existingTables = db.prepare(`\n      SELECT name FROM sqlite_master \n      WHERE type='table' AND name IN ('persona_hierarchy', 'persona_permission_cache')\n    `).all() as Array<{ name: string }>;\n    \n    if (existingTables.length > 0) {\n      console.log('⚠️  一部のRBACテーブルが既に存在します:', existingTables.map(t => t.name));\n    }\n    \n    // inherited_permissions カラムの存在確認\n    const",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/database/migrate_rbac.ts",
+        "start": 54,
+        "end": 67,
+        "startLoc": {
+          "line": 54,
+          "column": 26,
+          "position": 398
+        },
+        "endLoc": {
+          "line": 67,
+          "column": 6,
+          "position": 488
+        }
+      },
+      "secondFile": {
+        "name": "src/database/migrate_rbac_manual.ts",
+        "start": 53,
+        "end": 66,
+        "startLoc": {
+          "line": 53,
+          "column": 2,
+          "position": 392
+        },
+        "endLoc": {
+          "line": 66,
+          "column": 4,
+          "position": 482
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 8,
+      "fragment": "const roleTableInfo = db.prepare(`PRAGMA table_info(persona_roles)`).all() as Array<{ name: string }>;\n    const hasInheritedPermissions = roleTableInfo.some(col => col.name === 'inherited_permissions');\n    \n    if (hasInheritedPermissions) {\n      console.log('⚠️  inherited_permissions カラムは既に存在します');\n    }\n    \n    // スキーマを分割してバッチ実行",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/database/migrate_rbac.ts",
+        "start": 67,
+        "end": 74,
+        "startLoc": {
+          "line": 67,
+          "column": 5,
+          "position": 488
+        },
+        "endLoc": {
+          "line": 74,
+          "column": 18,
+          "position": 571
+        }
+      },
+      "secondFile": {
+        "name": "src/database/migrate_rbac_manual.ts",
+        "start": 67,
+        "end": 73,
+        "startLoc": {
+          "line": 67,
+          "column": 7,
+          "position": 487
+        },
+        "endLoc": {
+          "line": 73,
+          "column": 2,
+          "position": 568
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 25,
+      "fragment": "}\n      }\n    });\n    \n    // トランザクション実行\n    transaction();\n    \n    // 自分自身への階層レコードを挿入（既存の全人格に対して）\n    const existingContexts = db.prepare(`\n      SELECT DISTINCT context_id FROM persona_capabilities\n    `).all() as Array<{ context_id: string }>;\n    \n    const insertSelfHierarchy = db.prepare(`\n      INSERT OR IGNORE INTO persona_hierarchy (ancestor_id, descendant_id, depth, is_direct) \n      VALUES (?, ?, 0, FALSE)\n    `);\n    \n    for (const context of existingContexts) {\n      insertSelfHierarchy.run(context.context_id, context.context_id);\n    }\n    \n    console.log(`✅ 既存人格の自己参照階層レコード作成: ${existingContexts.length}件`);\n    \n    // データベース整合性チェック\n    const integrityCheck = db.pragma('integrity_check') as",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/database/migrate_rbac.ts",
+        "start": 146,
+        "end": 170,
+        "startLoc": {
+          "line": 146,
+          "column": 9,
+          "position": 1337
+        },
+        "endLoc": {
+          "line": 170,
+          "column": 3,
+          "position": 1485
+        }
+      },
+      "secondFile": {
+        "name": "src/database/migrate_rbac_manual.ts",
+        "start": 150,
+        "end": 174,
+        "startLoc": {
+          "line": 150,
+          "column": 9,
+          "position": 1045
+        },
+        "endLoc": {
+          "line": 174,
+          "column": 2,
+          "position": 1192
+        }
+      }
+    },
+    {
+      "format": "typescript",
+      "lines": 49,
+      "fragment": ")}`);\n    }\n    \n    console.log('✅ データベース整合性チェック: OK');\n    \n    // 最適化実行\n    db.pragma('optimize');\n    console.log('✅ データベース最適化完了');\n    \n    db.close();\n    \n    result.success = true;\n    \n    console.log('\\n🎉 Phase 1: RBAC データベースマイグレーション完了!');\n    console.log(`📊 作成されたテーブル: ${result.tablesCreated}`);\n    console.log(`📊 追加されたカラム: ${result.columnsAdded}`);\n    console.log(`📊 作成されたインデックス: ${result.indexesCreated}`);\n    console.log(`📊 作成されたビュー: ${result.viewsCreated}`);\n    console.log(`📊 作成されたトリガー: ${result.triggersCreated}`);\n    \n    return result;\n    \n  } catch (error: unknown) {\n    result.errors.push(`マイグレーション実行エラー: ${error instanceof Error ? error.message : String(error)}`);\n    console.error('❌ マイグレーションに失敗しました:', error);\n    result.success = false;\n    return result;\n  }\n}\n\n// スクリプトが直接実行された場合\nif (import.meta.url === `file://${process.argv[1]}`) {\n  runRBACMigration()\n    .then(result => {\n      if (result.success) {\n        console.log('✅ マイグレーション成功');\n        process.exit(0);\n      } else {\n        console.error('❌ マイグレーション失敗:', result.errors);\n        process.exit(1);\n      }\n    })\n    .catch(error => {\n      console.error('❌ 予期しないエラー:', error);\n      process.exit(1);\n    });\n}\n\nexport { runRBACMigration, type MigrationResult };",
+      "tokens": 0,
+      "firstFile": {
+        "name": "src/database/migrate_rbac.ts",
+        "start": 172,
+        "end": 220,
+        "startLoc": {
+          "line": 172,
+          "column": 5,
+          "position": 1522
+        },
+        "endLoc": {
+          "line": 220,
+          "column": 2,
+          "position": 1919
+        }
+      },
+      "secondFile": {
+        "name": "src/database/migrate_rbac_manual.ts",
+        "start": 183,
+        "end": 231,
+        "startLoc": {
+          "line": 183,
+          "column": 15,
+          "position": 1302
+        },
+        "endLoc": {
+          "line": 231,
+          "column": 2,
+          "position": 1699
+        }
+      }
+    }
+  ],
+  "filename": "/home/mako10k/mcp-sampler/node_modules/@jscpd/html-reporter/dist/templates/main.pug"
+}

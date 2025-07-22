@@ -6,6 +6,7 @@
  */
 
 import { Context, Conversation, PersonalityPreset, DEFAULT_PERSONALITY_PRESETS, DEFAULT_VALUES } from '../types/index.js';
+import { ContextMemoryDatabase } from './database.js';
 
 // =============================================================================
 // Token Counting and Management
@@ -50,7 +51,7 @@ export function truncateConversationHistory(
   const otherMessages = sorted.filter(conv => conv.role !== 'system');
 
   const systemTokens = calculateConversationTokens(systemMessages);
-  let availableTokens = maxTokens - systemTokens;
+  const availableTokens = maxTokens - systemTokens;
 
   if (availableTokens <= 0) {
     // If system messages exceed limit, keep only the most recent system message
@@ -142,7 +143,7 @@ export function createContextFromPreset(
     maxHistoryTokens?: number;
     expiryDays?: number;
   },
-  database?: any  // Optional database instance for dynamic preset lookup
+  database?: ContextMemoryDatabase  // Optional database instance for dynamic preset lookup
 ): Context {
   // First, try to find in static presets
   const staticPreset = DEFAULT_PERSONALITY_PRESETS[presetId as keyof typeof DEFAULT_PERSONALITY_PRESETS];
@@ -163,15 +164,14 @@ export function createContextFromPreset(
   if (database) {
     const dynamicPreset = database.getPersonalityPreset(presetId);
     if (dynamicPreset) {
-      const defaultSettings = dynamicPreset.defaultSettings ? JSON.parse(dynamicPreset.defaultSettings) : {};
       return createContext({
         name,
         systemPrompt: dynamicPreset.systemPrompt,
         personality: dynamicPreset.defaultPersonality,
-        temperature: overrides?.temperature || defaultSettings.temperature || DEFAULT_VALUES.context.temperature,
-        maxTokens: overrides?.maxTokens || defaultSettings.maxTokens || DEFAULT_VALUES.context.maxTokens,
-        maxHistoryTokens: overrides?.maxHistoryTokens || defaultSettings.maxHistoryTokens || DEFAULT_VALUES.context.maxHistoryTokens,
-        expiryDays: overrides?.expiryDays || defaultSettings.expiryDays || DEFAULT_VALUES.context.expiryDays
+        temperature: overrides?.temperature || dynamicPreset.defaultSettings.temperature,
+        maxTokens: overrides?.maxTokens || dynamicPreset.defaultSettings.maxTokens,
+        maxHistoryTokens: overrides?.maxHistoryTokens || dynamicPreset.defaultSettings.maxHistoryTokens,
+        expiryDays: overrides?.expiryDays || dynamicPreset.defaultSettings.expiryDays
       });
     }
   }
@@ -291,7 +291,7 @@ export function createPersonalityPreset(input: {
     maxHistoryTokens?: number;
     expiryDays?: number;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }): PersonalityPreset {
   const now = new Date().toISOString();
 
@@ -371,61 +371,49 @@ export function updatePersonalityPreset(preset: PersonalityPreset, updates: Part
 // =============================================================================
 
 /**
- * Validates context input parameters
+ * 共通バリデーション関数
  */
-export function validateContextInput(input: any): { isValid: boolean; errors: string[] } {
+export function validateInput(input: unknown, rules: Record<string, (value: unknown) => string | null>): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!input.name || typeof input.name !== 'string' || input.name.trim().length === 0) {
-    errors.push('Name is required and must be a non-empty string');
+  if (!input || typeof input !== 'object') {
+    return { isValid: false, errors: ['Input must be an object'] };
   }
 
-  if (!input.systemPrompt || typeof input.systemPrompt !== 'string' || input.systemPrompt.trim().length === 0) {
-    errors.push('System prompt is required and must be a non-empty string');
-  }
+  const inputObj = input as Record<string, unknown>;
 
-  if (input.temperature !== undefined && (typeof input.temperature !== 'number' || input.temperature < 0 || input.temperature > 1)) {
-    errors.push('Temperature must be a number between 0 and 1');
-  }
-
-  if (input.maxTokens !== undefined && (typeof input.maxTokens !== 'number' || input.maxTokens < 1)) {
-    errors.push('maxTokens must be a positive number');
-  }
-
-  if (input.maxHistoryTokens !== undefined && (typeof input.maxHistoryTokens !== 'number' || input.maxHistoryTokens < 1000)) {
-    errors.push('maxHistoryTokens must be at least 1000');
-  }
-
-  if (input.expiryDays !== undefined && (typeof input.expiryDays !== 'number' || input.expiryDays < 1)) {
-    errors.push('expiryDays must be a positive number');
+  for (const [key, rule] of Object.entries(rules)) {
+    const error = rule(inputObj[key]);
+    if (error) {
+      errors.push(`${key}: ${error}`);
+    }
   }
 
   return { isValid: errors.length === 0, errors };
 }
 
 /**
+ * Validates context input parameters
+ */
+export function validateContextInput(input: unknown): { isValid: boolean; errors: string[] } {
+  return validateInput(input, {
+    name: value => typeof value === 'string' && value.trim().length > 0 ? null : 'Name must be a non-empty string',
+    systemPrompt: value => typeof value === 'string' && value.trim().length > 0 ? null : 'System prompt must be a non-empty string',
+    temperature: value => value === undefined || (typeof value === 'number' && value >= 0 && value <= 1) ? null : 'Temperature must be a number between 0 and 1',
+    maxTokens: value => value === undefined || (typeof value === 'number' && value > 0) ? null : 'maxTokens must be a positive number',
+    maxHistoryTokens: value => value === undefined || (typeof value === 'number' && value >= 1000) ? null : 'maxHistoryTokens must be at least 1000',
+    expiryDays: value => value === undefined || (typeof value === 'number' && value > 0) ? null : 'expiryDays must be a positive number'
+  });
+}
+
+/**
  * Validates preset input parameters
  */
-export function validatePresetInput(input: any): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!input.name || typeof input.name !== 'string' || input.name.trim().length === 0) {
-    errors.push('Name is required and must be a non-empty string');
-  }
-
-  if (!input.description || typeof input.description !== 'string' || input.description.trim().length === 0) {
-    errors.push('Description is required and must be a non-empty string');
-  }
-
-  if (!input.systemPrompt || typeof input.systemPrompt !== 'string' || input.systemPrompt.trim().length === 0) {
-    errors.push('System prompt is required and must be a non-empty string');
-  }
-
-  if (!input.defaultPersonality || typeof input.defaultPersonality !== 'string' || input.defaultPersonality.trim().length === 0) {
-    errors.push('Default personality is required and must be a non-empty string');
-  }
-
-  return { isValid: errors.length === 0, errors };
+export function validatePresetInput(input: unknown): { isValid: boolean; errors: string[] } {
+  return validateInput(input, {
+    name: value => typeof value === 'string' && value.trim().length > 0 ? null : 'Name must be a non-empty string',
+    description: value => typeof value === 'string' && value.trim().length > 0 ? null : 'Description must be a non-empty string'
+  });
 }
 
 // =============================================================================

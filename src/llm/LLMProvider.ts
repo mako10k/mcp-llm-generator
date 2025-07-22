@@ -13,7 +13,7 @@ export interface LLMResponse {
     totalTokens: number;
   };
   finishReason?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Message {
@@ -28,9 +28,9 @@ export interface LLMRequestOptions {
   topP?: number;
   stop?: string[];
   stream?: boolean;
-  tools?: any[];
-  toolChoice?: any;
-  metadata?: Record<string, any>;
+  tools?: unknown[];
+  toolChoice?: unknown;
+  metadata?: Record<string, unknown>;
 }
 
 export interface LLMProvider {
@@ -60,7 +60,7 @@ export interface LLMProvider {
    */
   generateWithTools?(
     messages: Message[],
-    tools: any[],
+    tools: unknown[],
     options?: LLMRequestOptions
   ): Promise<LLMResponse>;
 
@@ -101,16 +101,23 @@ export abstract class BaseLLMProvider implements LLMProvider {
   /**
    * 共通のエラーハンドリング
    */
-  protected handleError(error: any, operation: string): never {
+  protected handleError(error: unknown, operation: string): never {
     console.error(`${this.name} ${operation} error:`, error);
-    if (error.response?.status === 401) {
+    
+    // Type-safe error handling
+    const errorObj = error as Error & { 
+      response?: { status: number }; 
+      message?: string; 
+    };
+    
+    if (errorObj.response?.status === 401) {
       throw new Error(`${this.name}: Invalid API key`);
-    } else if (error.response?.status === 429) {
+    } else if (errorObj.response?.status === 429) {
       throw new Error(`${this.name}: Rate limit exceeded`);
-    } else if (error.response?.status === 404) {
+    } else if (errorObj.response?.status === 404) {
       throw new Error(`${this.name}: Model not found`);
     } else {
-      throw new Error(`${this.name}: ${error.message || 'Unknown error'}`);
+      throw new Error(`${this.name}: ${errorObj.message || 'Unknown error'}`);
     }
   }
 

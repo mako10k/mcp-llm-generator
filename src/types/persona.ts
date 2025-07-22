@@ -73,7 +73,7 @@ export interface PersonaLineage {
   parent_persona_id?: string;        // 親人格ID
   creation_reason?: string;          // 作成理由
   merge_type: 'create' | 'merge' | 'split';
-  metadata: Record<string, any>;     // 追加メタデータ
+  metadata: Record<string, unknown>;     // 追加メタデータ
   created_at: string;
 }
 
@@ -99,8 +99,8 @@ export interface PersonaMergeAudit {
   primary_persona_id: string;        // 主人格ID
   secondary_persona_ids: string[];   // 統合された人格ID配列
   merge_strategy: MergeStrategy;     // 統合戦略
-  capability_changes: Record<string, any>; // 能力変更差分
-  permission_changes: Record<string, any>; // 権限変更差分
+  capability_changes: Record<string, unknown>; // 能力変更差分
+  permission_changes: Record<string, unknown>; // 権限変更差分
   history_access_granted: string[];  // 付与された履歴アクセス権
   operator_id?: string;              // 操作者ID
   operation_hash: string;            // 改ざん検知用ハッシュ
@@ -151,7 +151,7 @@ export interface TaskDelegationRequest {
   required_capabilities: string[];
   max_wait_time?: number;           // 秒単位
   priority?: number;               // 1-10
-  task_data?: Record<string, any>;
+  task_data?: Record<string, unknown>;
 }
 
 // 能力検索フィルター

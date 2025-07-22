@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-async function initializeDatabase() {
+async function initializeDatabase(): Promise<void> {
   console.log('🚀 Sprint4 Phase 1: データベース初期化開始');
   
   try {
@@ -107,7 +107,7 @@ async function initializeDatabase() {
   }
 }
 
-async function insertSampleData(db: Database.Database) {
+async function insertSampleData(db: Database.Database): Promise<void> {
   console.log('\n🌱 サンプルデータ挿入開始...');
   
   try {

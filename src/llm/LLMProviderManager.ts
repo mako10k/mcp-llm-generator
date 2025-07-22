@@ -10,8 +10,8 @@ import { ClaudeProvider } from './ClaudeProvider.js';
 export interface LLMManagerConfig {
   defaultProvider?: string;
   providers?: {
-    openai?: any;
-    claude?: any;
+    openai?: Record<string, unknown>;
+    claude?: Record<string, unknown>;
   };
 }
 
@@ -26,7 +26,7 @@ export class LLMProviderManager {
     this.initializeProviders(config);
   }
 
-  private initializeProviders(config: LLMManagerConfig) {
+  private initializeProviders(config: LLMManagerConfig): void {
     // OpenAI Provider
     if (process.env.OPENAI_API_KEY || config.providers?.openai) {
       try {
@@ -129,7 +129,7 @@ export class LLMProviderManager {
    */
   async generateWithTools(
     messages: Message[],
-    tools: any[],
+    tools: unknown[],
     options: LLMRequestOptions & { provider?: string } = {}
   ): Promise<LLMResponse> {
     const { provider: providerName, ...llmOptions } = options;

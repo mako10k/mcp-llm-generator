@@ -3,15 +3,73 @@
  * MCPプロトコルに準拠したツール実装
  */
 
-import { z } from 'zod';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { 
   RBACAPIService, 
   CreateHierarchyRequest, 
-  GetPermissionsRequest, 
+  GetPermissionsRequest,
   CheckPermissionRequest,
   GetHierarchyTreeRequest,
-  UpdatePermissionsRequest 
+  GetHierarchyTreeResponse,
+  UpdatePermissionsRequest
 } from './RBACAPIService.js';
+import { HierarchyNode, EffectivePermissions } from './RBACEngine.js';
+
+// 自己能力認識の引数型
+interface SelfCapabilitiesRequest {
+  context_id: string;
+  include_tools?: boolean;
+  include_memory_scope?: boolean;
+  include_hierarchy_position?: boolean;
+}
+
+// 能力分析結果の型
+interface CapabilityAnalysis {
+  context_id: string;
+  self_awareness: {
+    permission_summary: {
+      total_effective_permissions: number;
+      direct_permissions: number;
+      inherited_permissions: number;
+      inheritance_ratio: number;
+    };
+    tool_capabilities?: {
+      available_tools: string[];
+      tool_count: number;
+      tool_categories: Record<string, string[]>;
+    };
+    memory_access?: {
+      scope: string;
+      access_level: string;
+      scope_analysis: MemoryScopeAnalysis;
+    };
+    hierarchy_position?: {
+      has_parent: boolean;
+      parent_context_id?: string;
+      children_count: number;
+      depth_in_hierarchy: number;
+      ancestors_count: number;
+      descendants_count: number;
+      position_type: string;
+    };
+  };
+}
+
+// メモリスコープ分析の型
+interface MemoryScopeAnalysis {
+  level: string;
+  description: string;
+  scopes?: string[];
+}
+
+// 階層情報型
+interface HierarchyInfo {
+  parent_context_id?: string;
+  children_context_ids: string[];
+  depth_in_hierarchy: number;
+  ancestors_count: number;
+  descendants_count: number;
+}
 
 // ツール定義とスキーマ
 export const RBAC_TOOLS = {
@@ -228,8 +286,19 @@ export class RBACMCPTools {
   /**
    * 階層関係の作成ツール
    */
-  async createHierarchy(args: any): Promise<any> {
+  async createHierarchy(args: CreateHierarchyRequest): Promise<CallToolResult> {
     try {
+      // 入力検証 - 不正データは門前払い
+      if (!args.parent_context_id || typeof args.parent_context_id !== 'string') {
+        throw new Error('Invalid parent_context_id: must be a non-empty string');
+      }
+      if (!args.child_context_id || typeof args.child_context_id !== 'string') {
+        throw new Error('Invalid child_context_id: must be a non-empty string');
+      }
+      if (args.parent_context_id === args.child_context_id) {
+        throw new Error('parent_context_id and child_context_id cannot be the same');
+      }
+
       const request: CreateHierarchyRequest = {
         parent_context_id: args.parent_context_id,
         child_context_id: args.child_context_id,
@@ -276,8 +345,13 @@ export class RBACMCPTools {
   /**
    * 権限取得ツール
    */
-  async getPermissions(args: any): Promise<any> {
+  async getPermissions(args: GetPermissionsRequest): Promise<CallToolResult> {
     try {
+      // 入力検証 - 不正データは門前払い
+      if (!args.context_id || typeof args.context_id !== 'string') {
+        throw new Error('Invalid context_id: must be a non-empty string');
+      }
+
       const request: GetPermissionsRequest = {
         context_id: args.context_id,
         include_hierarchy: args.include_hierarchy,
@@ -330,8 +404,19 @@ export class RBACMCPTools {
   /**
    * 権限チェックツール
    */
-  async checkPermission(args: any): Promise<any> {
+  async checkPermission(args: CheckPermissionRequest): Promise<CallToolResult> {
     try {
+      // 入力検証 - 不正データは門前払い
+      if (!args.context_id || typeof args.context_id !== 'string') {
+        throw new Error('Invalid context_id: must be a non-empty string');
+      }
+      if (!args.action || typeof args.action !== 'string') {
+        throw new Error('Invalid action: must be a non-empty string');
+      }
+      if (!args.resource || typeof args.resource !== 'string') {
+        throw new Error('Invalid resource: must be a non-empty string');
+      }
+
       const request: CheckPermissionRequest = {
         context_id: args.context_id,
         action: args.action,
@@ -382,8 +467,13 @@ export class RBACMCPTools {
   /**
    * 階層ツリー取得ツール
    */
-  async getHierarchyTree(args: any = {}): Promise<any> {
+  async getHierarchyTree(args: GetHierarchyTreeRequest = {}): Promise<CallToolResult> {
     try {
+      // 入力検証
+      if (args.max_depth !== undefined && (typeof args.max_depth !== 'number' || args.max_depth < 1)) {
+        throw new Error('Invalid max_depth: must be a positive number');
+      }
+
       const request: GetHierarchyTreeRequest = {
         root_context_id: args.root_context_id,
         max_depth: args.max_depth,
@@ -438,8 +528,13 @@ export class RBACMCPTools {
   /**
    * 権限更新ツール
    */
-  async updatePermissions(args: any): Promise<any> {
+  async updatePermissions(args: UpdatePermissionsRequest): Promise<CallToolResult> {
     try {
+      // 入力検証 - 不正データは門前払い
+      if (!args.context_id || typeof args.context_id !== 'string') {
+        throw new Error('Invalid context_id: must be a non-empty string');
+      }
+
       const request: UpdatePermissionsRequest = {
         context_id: args.context_id,
         permissions_to_add: args.permissions_to_add,
@@ -491,8 +586,13 @@ export class RBACMCPTools {
   /**
    * 自己能力認識ツール
    */
-  async getSelfCapabilities(args: any): Promise<any> {
+  async getSelfCapabilities(args: SelfCapabilitiesRequest): Promise<CallToolResult> {
     try {
+      // 入力検証 - 不正データは門前払い
+      if (!args.context_id || typeof args.context_id !== 'string') {
+        throw new Error('Invalid context_id: must be a non-empty string');
+      }
+
       const contextId = args.context_id;
       
       // 基本権限情報取得
@@ -545,7 +645,7 @@ export class RBACMCPTools {
   /**
    * 階層ツリーの可視化
    */
-  private buildTreeVisualization(nodes: any[]): string[] {
+  private buildTreeVisualization(nodes: HierarchyNode[]): string[] {
     const visualization: string[] = [];
     const rootNodes = nodes.filter(node => !node.parent_id);
 
@@ -556,7 +656,7 @@ export class RBACMCPTools {
     return visualization;
   }
 
-  private buildNodeVisualization(node: any, allNodes: any[], visualization: string[], depth: number): void {
+  private buildNodeVisualization(node: HierarchyNode, allNodes: HierarchyNode[], visualization: string[], depth: number): void {
     const indent = '  '.repeat(depth);
     const prefix = depth === 0 ? '🌳' : '├─';
     visualization.push(`${indent}${prefix} ${node.context_id} (depth: ${node.depth})`);
@@ -572,7 +672,7 @@ export class RBACMCPTools {
   /**
    * 階層分析の推奨事項生成
    */
-  private generateHierarchyRecommendations(response: any): string[] {
+  private generateHierarchyRecommendations(response: GetHierarchyTreeResponse): string[] {
     const recommendations: string[] = [];
 
     if (response.total_nodes === 0) {
@@ -593,8 +693,8 @@ export class RBACMCPTools {
   /**
    * 能力分析
    */
-  private analyzeCapabilities(effectivePermissions: any, hierarchyInfo: any, hierarchyTree: any[], args: any): any {
-    const capabilities: any = {
+  private analyzeCapabilities(effectivePermissions: EffectivePermissions, hierarchyInfo: HierarchyInfo | undefined, hierarchyTree: HierarchyNode[], args: SelfCapabilitiesRequest): CapabilityAnalysis {
+    const capabilities: CapabilityAnalysis = {
       context_id: effectivePermissions.context_id,
       self_awareness: {
         permission_summary: {
@@ -666,7 +766,7 @@ export class RBACMCPTools {
     return categories;
   }
 
-  private analyzeMemoryScope(scope: string): any {
+  private analyzeMemoryScope(scope: string): MemoryScopeAnalysis {
     if (scope === '*') {
       return { level: 'global', description: 'Full access to all memory scopes' };
     } else if (scope === '') {
@@ -681,12 +781,12 @@ export class RBACMCPTools {
     }
   }
 
-  private determinePositionType(hierarchyInfo: any): string {
-    if (!hierarchyInfo.parent_context_id && hierarchyInfo.children_count === 0) {
+  private determinePositionType(hierarchyInfo: HierarchyInfo): string {
+    if (!hierarchyInfo.parent_context_id && hierarchyInfo.children_context_ids.length === 0) {
       return 'isolated';
-    } else if (!hierarchyInfo.parent_context_id && hierarchyInfo.children_count > 0) {
+    } else if (!hierarchyInfo.parent_context_id && hierarchyInfo.children_context_ids.length > 0) {
       return 'root';
-    } else if (hierarchyInfo.parent_context_id && hierarchyInfo.children_count === 0) {
+    } else if (hierarchyInfo.parent_context_id && hierarchyInfo.children_context_ids.length === 0) {
       return 'leaf';
     } else {
       return 'intermediate';

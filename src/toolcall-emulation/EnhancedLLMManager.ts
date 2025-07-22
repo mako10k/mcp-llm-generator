@@ -9,13 +9,13 @@ import {
   Tool, 
   ToolCallEmulationResponse, 
   ToolCallEmulationResponseSchema,
-  BaseModel,
   ResponseParserConfig 
 } from './types.js';
 import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 export interface StructuredOutputOptions extends LLMRequestOptions {
-  schema?: z.ZodSchema<any>;
+  schema?: z.ZodSchema<unknown>;
   strict?: boolean;
   responseFormat?: 'json_object' | 'json_schema';
   validateResponse?: boolean;
@@ -76,7 +76,7 @@ export class EnhancedLLMManager extends LLMProviderManager {
           type: 'json_schema',
           json_schema: {
             name: 'structured_response',
-            schema: this.zodSchemaToJsonSchema(schema),
+            schema: zodToJsonSchema(schema),
             strict: options.strict ?? this.parserConfig.strictMode
           }
         }
@@ -195,48 +195,6 @@ IMPORTANT INSTRUCTIONS:
 Output Format: Follow the structured schema exactly with no additional properties.`;
   }
 
-  /**
-   * Zod Schema を JSON Schema に変換
-   */
-  private zodSchemaToJsonSchema(schema: z.ZodSchema<any>): any {
-    // 簡易的な変換実装（実際のプロダクションでは zod-to-json-schema ライブラリを使用）
-    try {
-      const sample = schema.parse({});
-      return this.inferSchemaFromSample(sample);
-    } catch {
-      // フォールバック用のGeneric schema
-      return {
-        type: 'object',
-        additionalProperties: false
-      };
-    }
-  }
-
-  /**
-   * サンプルから schema を推論
-   */
-  private inferSchemaFromSample(sample: any): any {
-    if (typeof sample === 'object' && sample !== null) {
-      const properties: any = {};
-      const required: string[] = [];
-      
-      for (const [key, value] of Object.entries(sample)) {
-        if (value !== undefined) {
-          properties[key] = this.inferSchemaFromSample(value);
-          required.push(key);
-        }
-      }
-      
-      return {
-        type: 'object',
-        properties,
-        required,
-        additionalProperties: false
-      };
-    }
-    
-    return { type: typeof sample };
-  }
 
   /**
    * 構造化レスポンスのパース
@@ -292,7 +250,7 @@ Output Format: Follow the structured schema exactly with no additional propertie
   /**
    * フォールバック レスポンス
    */
-  private fallbackResponse<T>(schema: z.ZodSchema<T>): any {
+  private fallbackResponse<T>(schema: z.ZodSchema<T>): { content: T; raw: LLMResponse; metadata: { parseSuccess: boolean; confidence: number } } {
     try {
       const fallback = schema.parse({});
       return {

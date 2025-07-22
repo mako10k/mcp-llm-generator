@@ -2,14 +2,39 @@
 // 作成日: 2025年7月22日
 // 目的: マージ前のオリジナルデータの保存と復元管理
 
-import { Database } from 'better-sqlite3';
+import Database from 'better-sqlite3';
+
+// 型定義
+interface CapabilityInfo {
+  category: string;
+  description: string;
+  priority: number;
+  [key: string]: unknown;
+}
+
+interface ContextMetadata {
+  version: string;
+  lastModified: string;
+  [key: string]: unknown;
+}
+
+// データベース行の型定義
+interface SnapshotRow {
+  snapshot_id: string;
+  context_id: string;
+  original_prompt: string;
+  original_capabilities: string;
+  original_metadata: string | null;
+  timestamp: string;
+  merge_operation_id: string;
+}
 
 export interface OriginalDataSnapshot {
   snapshotId: string;
   contextId: string;
   originalPrompt: string;
-  originalCapabilities: any[];
-  originalMetadata: any;
+  originalCapabilities: CapabilityInfo[];
+  originalMetadata: ContextMetadata;
   timestamp: string;
   mergeOperationId: string;
 }
@@ -19,11 +44,26 @@ export interface OriginalDataSnapshot {
  * マージ操作前のデータスナップショットの保存・復元を管理
  */
 export class OriginalDataManager {
-  private db: Database;
+  private db: Database.Database;
 
-  constructor(database: Database) {
+  constructor(database: Database.Database) {
     this.db = database;
     this.initializeTables();
+  }
+
+  /**
+   * データベース行をOriginalDataSnapshotオブジェクトにマップ（重複排除）
+   */
+  private mapRowToSnapshot(row: SnapshotRow): OriginalDataSnapshot {
+    return {
+      snapshotId: row.snapshot_id,
+      contextId: row.context_id,
+      originalPrompt: row.original_prompt,
+      originalCapabilities: JSON.parse(row.original_capabilities),
+      originalMetadata: row.original_metadata ? JSON.parse(row.original_metadata) : null,
+      timestamp: row.timestamp,
+      mergeOperationId: row.merge_operation_id
+    };
   }
 
   /**
@@ -55,8 +95,8 @@ export class OriginalDataManager {
   async createSnapshot(
     contextId: string,
     originalPrompt: string,
-    originalCapabilities: any[],
-    originalMetadata: any,
+    originalCapabilities: CapabilityInfo[],
+    originalMetadata: ContextMetadata,
     mergeOperationId: string
   ): Promise<string> {
     const snapshotId = this.generateSnapshotId();
@@ -91,18 +131,10 @@ export class OriginalDataManager {
       SELECT * FROM original_data_snapshots WHERE snapshot_id = ?
     `);
 
-    const row = selectSnapshot.get(snapshotId) as any;
+    const row = selectSnapshot.get(snapshotId) as SnapshotRow | undefined;
     if (!row) return null;
 
-    return {
-      snapshotId: row.snapshot_id,
-      contextId: row.context_id,
-      originalPrompt: row.original_prompt,
-      originalCapabilities: JSON.parse(row.original_capabilities),
-      originalMetadata: row.original_metadata ? JSON.parse(row.original_metadata) : null,
-      timestamp: row.timestamp,
-      mergeOperationId: row.merge_operation_id
-    };
+    return this.mapRowToSnapshot(row);
   }
 
   /**
@@ -115,16 +147,8 @@ export class OriginalDataManager {
       ORDER BY created_at DESC
     `);
 
-    const rows = selectSnapshots.all(contextId) as any[];
-    return rows.map(row => ({
-      snapshotId: row.snapshot_id,
-      contextId: row.context_id,
-      originalPrompt: row.original_prompt,
-      originalCapabilities: JSON.parse(row.original_capabilities),
-      originalMetadata: row.original_metadata ? JSON.parse(row.original_metadata) : null,
-      timestamp: row.timestamp,
-      mergeOperationId: row.merge_operation_id
-    }));
+    const rows = selectSnapshots.all(contextId) as SnapshotRow[];
+    return rows.map(row => this.mapRowToSnapshot(row));
   }
 
   /**
@@ -135,18 +159,10 @@ export class OriginalDataManager {
       SELECT * FROM original_data_snapshots WHERE merge_operation_id = ?
     `);
 
-    const row = selectSnapshot.get(mergeOperationId) as any;
+    const row = selectSnapshot.get(mergeOperationId) as SnapshotRow | undefined;
     if (!row) return null;
 
-    return {
-      snapshotId: row.snapshot_id,
-      contextId: row.context_id,
-      originalPrompt: row.original_prompt,
-      originalCapabilities: JSON.parse(row.original_capabilities),
-      originalMetadata: row.original_metadata ? JSON.parse(row.original_metadata) : null,
-      timestamp: row.timestamp,
-      mergeOperationId: row.merge_operation_id
-    };
+    return this.mapRowToSnapshot(row);
   }
 
   /**
@@ -156,8 +172,8 @@ export class OriginalDataManager {
   async restoreData(snapshotId: string): Promise<{
     contextId: string;
     originalPrompt: string;
-    originalCapabilities: any[];
-    originalMetadata: any;
+    originalCapabilities: CapabilityInfo[];
+    originalMetadata: ContextMetadata;
   } | null> {
     const snapshot = await this.getSnapshot(snapshotId);
     if (!snapshot) return null;

@@ -808,8 +808,12 @@ export class PersonaManager {
   private rankCandidatesByCapability(
     requiredCapabilities: string[],
     excludeContextIds: string[],
-    options: any
-  ): Array<{context_id: string, capability_score: number, load_factor: number}> {
+    options: {
+      exclude_busy?: boolean;
+      min_capability_match?: number;
+      max_candidates?: number;
+    }
+  ): Array<{ context_id: string; capability_score: number; load_factor: number }> {
     try {
       let query = `
         SELECT 
@@ -830,8 +834,8 @@ export class PersonaManager {
       query += ` GROUP BY pc.context_id`;
       
       const stmt = this.db.prepare(query);
-      const candidates = stmt.all(...excludeContextIds) as any[];
-      
+      const candidates = stmt.all(...excludeContextIds) as Array<{ context_id: string; expertise: string; tools: string; current_load: number }>;
+
       return candidates
         .map(candidate => {
           const expertise = JSON.parse(candidate.expertise || '[]');
@@ -901,18 +905,17 @@ export class PersonaManager {
     }
   }
 
-  async searchSharedMemory(contextId: string, keyword: string): Promise<any[]> {
+  async searchSharedMemory(contextId: string, keyword: string): Promise<Array<{ id: string; title: string; content: string; permission_level: 'public' | 'edit'; }>> {
     try {
       if (global.sharedMemoryTools) {
         const result = await global.sharedMemoryTools.handleToolCall('shared-memory-search', {
-          query: keyword,  // パラメータ名修正
+          query: keyword,
           requester_persona_id: contextId
         });
-        
-        // 結果の解析とフォーマット
+
         const content = result?.content?.[0]?.text || '[]';
-        const memories = JSON.parse(content);
-        
+        const memories: Array<{ id: string; title: string; content: string; permission_level: 'public' | 'edit'; }> = JSON.parse(content);
+
         this.logger.info(`Searched shared memory for persona ${contextId}`, {
           method: 'searchSharedMemory',
           contextId: contextId,
@@ -936,7 +939,13 @@ export class PersonaManager {
   async updateSharedMemory(contextId: string, memoryId: string, title?: string, content?: string): Promise<boolean> {
     try {
       if (global.sharedMemoryTools) {
-        const updateData: any = { id: memoryId, updater_persona_id: contextId };  // パラメータ名修正: id
+        interface SharedMemoryUpdateData {
+          id: string;
+          updater_persona_id: string;
+          title?: string;
+          content?: string;
+        }
+        const updateData: SharedMemoryUpdateData = { id: memoryId, updater_persona_id: contextId };  // パラメータ名修正: id
         if (title) updateData.title = title;
         if (content) updateData.content = content;
         

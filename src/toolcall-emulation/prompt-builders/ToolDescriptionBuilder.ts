@@ -7,6 +7,7 @@ import { BasePromptSectionBuilder, BuilderConfig } from './PromptSectionBuilder.
 import { PromptContext } from '../../types/prompt.js';
 import { Tool } from '../../types/tool.js';
 import { ParameterFormatter } from './ParameterFormatter.js';
+import { ToolUsageHintGenerator } from '../utils/ToolUsageHintGenerator.js';
 
 export class ToolDescriptionBuilder extends BasePromptSectionBuilder {
   constructor(config?: BuilderConfig) {
@@ -48,22 +49,6 @@ export class ToolDescriptionBuilder extends BasePromptSectionBuilder {
 **Parameters**:
 ${ParameterFormatter.format(func.parameters, required, optional)}
 
-**Usage**: Call this tool when ${this.generateUsageHint(func)}`;
-  }
-
-  /**
-   * 使用ヒントの生成
-   */
-  private generateUsageHint(func: any): string {
-    const keywords = func.name.toLowerCase();
-    
-    if (keywords.includes('search')) return 'the user needs to find or search for information';
-    if (keywords.includes('create')) return 'the user wants to create something new';
-    if (keywords.includes('update')) return 'the user wants to modify existing data';
-    if (keywords.includes('delete')) return 'the user wants to remove something';
-    if (keywords.includes('get') || keywords.includes('fetch')) return 'the user needs to retrieve specific data';
-    if (keywords.includes('send') || keywords.includes('notify')) return 'the user wants to communicate or send notifications';
-    
-    return 'the user\'s request matches this tool\'s functionality';
+**Usage**: Call this tool when ${ToolUsageHintGenerator.generateUsageHint(func)}`;
   }
 }

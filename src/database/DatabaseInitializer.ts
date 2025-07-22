@@ -30,7 +30,7 @@ export class DatabaseInitializer {
   private static readonly schemas: Record<TableName, string> = {
     contexts: `
       CREATE TABLE IF NOT EXISTS contexts (
-        context_id TEXT PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -49,7 +49,7 @@ export class DatabaseInitializer {
         is_public BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (context_id) REFERENCES contexts(context_id) ON DELETE CASCADE
+        FOREIGN KEY (context_id) REFERENCES contexts(id) ON DELETE CASCADE
       )
     `,
 
@@ -61,8 +61,8 @@ export class DatabaseInitializer {
         is_direct BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (ancestor_id, descendant_id),
-        FOREIGN KEY (ancestor_id) REFERENCES contexts(context_id) ON DELETE CASCADE,
-        FOREIGN KEY (descendant_id) REFERENCES contexts(context_id) ON DELETE CASCADE
+        FOREIGN KEY (ancestor_id) REFERENCES contexts(id) ON DELETE CASCADE,
+        FOREIGN KEY (descendant_id) REFERENCES contexts(id) ON DELETE CASCADE
       )
     `,
 
@@ -78,7 +78,7 @@ export class DatabaseInitializer {
         is_active BOOLEAN DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (context_id) REFERENCES contexts(context_id) ON DELETE CASCADE,
+        FOREIGN KEY (context_id) REFERENCES contexts(id) ON DELETE CASCADE,
         FOREIGN KEY (parent_role_id) REFERENCES persona_roles(role_id) ON DELETE SET NULL
       )
     `,
@@ -99,8 +99,8 @@ export class DatabaseInitializer {
         completed_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (from_context_id) REFERENCES contexts(context_id) ON DELETE CASCADE,
-        FOREIGN KEY (to_context_id) REFERENCES contexts(context_id) ON DELETE CASCADE
+        FOREIGN KEY (from_context_id) REFERENCES contexts(id) ON DELETE CASCADE,
+        FOREIGN KEY (to_context_id) REFERENCES contexts(id) ON DELETE CASCADE
       )
     `,
 
@@ -116,8 +116,8 @@ export class DatabaseInitializer {
         is_active BOOLEAN DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (parent_context_id) REFERENCES contexts(context_id) ON DELETE CASCADE,
-        FOREIGN KEY (child_context_id) REFERENCES contexts(context_id) ON DELETE CASCADE
+        FOREIGN KEY (parent_context_id) REFERENCES contexts(id) ON DELETE CASCADE,
+        FOREIGN KEY (child_context_id) REFERENCES contexts(id) ON DELETE CASCADE
       )
     `,
 

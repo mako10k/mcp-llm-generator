@@ -6,16 +6,88 @@
 import { PersonaManager } from '../utils/personaManager.js';
 import { RBACMCPTools } from '../rbac/RBACMCPTools.js';
 import { Permission } from '../rbac/RBACEngine.js';
+import { PersonaCapabilities, SecurityValidationResult, TaskDelegation, PromptSecurityLevel } from '../types/persona';
+
+// 型定義を追加
+interface PersonaPermissions {
+  contextId: string;
+  permissions: Permission[];
+  hierarchy?: PersonaPermissions[];
+}
+
+interface PersonaHierarchyTree {
+  contextId: string;
+  children: PersonaHierarchyTree[];
+  permissions: Permission[];
+}
+
+interface PersonaSelfCapabilities {
+  contextId: string;
+  capabilities: {
+    tools: string[];
+    memory_scope: string[];
+    hierarchy_position: string;
+  };
+}
+
+// 実行時型ガード関数
+function isValidRBACResponse(response: unknown): response is { success: boolean; result: unknown } {
+  return typeof response === 'object' && 
+         response !== null && 
+         'success' in response && 
+         typeof (response as Record<string, unknown>).success === 'boolean';
+}
+
+function isValidHierarchyResult(result: unknown): result is { hierarchy_created: boolean } {
+  return typeof result === 'object' && 
+         result !== null && 
+         'hierarchy_created' in result &&
+         typeof (result as Record<string, unknown>).hierarchy_created === 'boolean';
+}
+
+// JSON解析のユーティリティ関数
+function safeJsonParse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+function isValidPermissionCheckResult(result: unknown): result is { permitted: boolean } {
+  return typeof result === 'object' && 
+         result !== null && 
+         'permitted' in result &&
+         typeof (result as Record<string, unknown>).permitted === 'boolean';
+}
 
 export interface RBACPersonaManager extends PersonaManager {
   // RBAC拡張機能
   createPersonaHierarchy(parentContextId: string, childContextId: string, permissions?: Permission[]): Promise<boolean>;
-  getPersonaPermissions(contextId: string, includeHierarchy?: boolean): Promise<any>;
-  checkPersonaPermission(contextId: string, action: string, resource: string, conditions?: Record<string, any>): Promise<boolean>;
+  getPersonaPermissions(contextId: string, includeHierarchy?: boolean): Promise<PersonaPermissions | null>;
+  checkPersonaPermission(contextId: string, action: string, resource: string, conditions?: Record<string, string | number | boolean | null>): Promise<boolean>;
   updatePersonaPermissions(contextId: string, permissionsToAdd?: Permission[], permissionsToRemove?: Permission[]): Promise<boolean>;
-  getPersonaHierarchyTree(rootContextId?: string): Promise<any>;
-  getPersonaSelfCapabilities(contextId: string): Promise<any>;
-  
+  getPersonaHierarchyTree(rootContextId?: string): Promise<PersonaHierarchyTree | null>;
+  getPersonaSelfCapabilities(contextId: string): Promise<PersonaSelfCapabilities | null>;
+
+  // 必須メソッド（PersonaManagerから継承）
+  getPersonaCapabilities(contextId: string): PersonaCapabilities | null;
+  updatePersonaCapabilities(contextId: string, capabilities: PersonaCapabilities): boolean;
+  checkRolePermissions(contextId: string, requiredPermission: string): boolean;
+  createTaskDelegation(delegation: Omit<TaskDelegation, 'delegation_id' | 'created_at' | 'updated_at'>): string | null;
+  findSuitablePersona(requiredCapabilities: string[], excludeContextIds?: string[]): string | null;
+  optimizePromptForPersona(contextId: string, basePrompt: string, options?: {
+    max_tokens?: number;
+    model?: string;
+    security_level?: PromptSecurityLevel;
+    task_context?: string;
+  }): {
+    optimized_prompt: string;
+    security_result: SecurityValidationResult;
+    token_analysis: unknown;
+    applied_optimizations: string[];
+  };
+
   // クリーンアップメソッド
   cleanup?(): void;
 }
@@ -26,153 +98,170 @@ export interface RBACPersonaManager extends PersonaManager {
 export function createRBACPersonaManager(personaManager: PersonaManager, dbPath: string): RBACPersonaManager {
   const rbacTools = new RBACMCPTools(dbPath);
 
-  // PersonaManagerオブジェクトを拡張
-  const rbacPersonaManager = personaManager as RBACPersonaManager;
+  // PersonaManagerをベースとして、RBACメソッドを追加
+  const rbacExtensions = {
+    createPersonaHierarchy: async function(
+      parentContextId: string, 
+      childContextId: string, 
+      permissions?: Permission[]
+    ): Promise<boolean> {
+      try {
+        const result = await rbacTools.createHierarchy({
+          parent_context_id: parentContextId,
+          child_context_id: childContextId,
+          permissions_to_inherit: permissions
+        });
 
-  /**
-   * 人格階層の作成
-   */
-  rbacPersonaManager.createPersonaHierarchy = async function(
-    parentContextId: string, 
-    childContextId: string, 
-    permissions?: Permission[]
-  ): Promise<boolean> {
-    try {
-      const result = await rbacTools.createHierarchy({
-        parent_context_id: parentContextId,
-        child_context_id: childContextId,
-        permissions_to_inherit: permissions
-      });
+        if (!result.content?.[0]?.text || typeof result.content[0].text !== 'string') {
+          throw new Error('Invalid response content structure from createHierarchy');
+        }
+        const rawResponse = safeJsonParse(result.content[0].text);
+        if (!isValidRBACResponse(rawResponse)) {
+          throw new Error('Invalid RBAC response format');
+        }
+        if (!isValidHierarchyResult(rawResponse.result)) {
+          throw new Error('Invalid hierarchy result format');
+        }
+        return rawResponse.success && rawResponse.result.hierarchy_created;
+      } catch (error) {
+        console.error('❌ Failed to create persona hierarchy:', error);
+        return false;
+      }
+    },
+    getPersonaPermissions: async function(
+      contextId: string, 
+      includeHierarchy?: boolean
+    ): Promise<PersonaPermissions | null> {
+      try {
+        const result = await rbacTools.getPermissions({
+          context_id: contextId,
+          include_hierarchy: includeHierarchy || false
+        });
 
-      const response = JSON.parse(result.content[0].text);
-      return response.success && response.result.hierarchy_created;
-    } catch (error) {
-      console.error('❌ Failed to create persona hierarchy:', error);
-      return false;
+        if (!result.content?.[0]?.text || typeof result.content[0].text !== 'string') {
+          throw new Error('Invalid response content structure from getPermissions');
+        }
+        const rawResponse = safeJsonParse(result.content[0].text);
+        if (!isValidRBACResponse(rawResponse)) {
+          throw new Error('Invalid RBAC response format');
+        }
+        return rawResponse.result as PersonaPermissions;
+      } catch (error) {
+        console.error('❌ Failed to get persona permissions:', error);
+        return null;
+      }
+    },
+    checkPersonaPermission: async function(
+      contextId: string, 
+      action: string, 
+      resource: string, 
+      conditions?: Record<string, string | number | boolean | null>
+    ): Promise<boolean> {
+      try {
+        const result = await rbacTools.checkPermission({
+          context_id: contextId,
+          action: action,
+          resource: resource,
+          conditions: conditions
+        });
+
+        if (!result.content?.[0]?.text || typeof result.content[0].text !== 'string') {
+          throw new Error('Invalid response content structure from checkPermission');
+        }
+        const rawResponse = safeJsonParse(result.content[0].text);
+        if (!isValidRBACResponse(rawResponse)) {
+          throw new Error('Invalid RBAC response format');
+        }
+        
+        // より厳密な権限チェック結果の検証
+        if (isValidPermissionCheckResult(rawResponse.result)) {
+          return rawResponse.result.permitted;
+        }
+        
+        return Boolean(rawResponse.result);
+      } catch (error) {
+        console.error('❌ Failed to check persona permission:', error);
+        return false;
+      }
+    },
+    updatePersonaPermissions: async function(
+      contextId: string, 
+      permissionsToAdd?: Permission[], 
+      permissionsToRemove?: Permission[]
+    ): Promise<boolean> {
+      try {
+        const result = await rbacTools.updatePermissions({
+          context_id: contextId,
+          permissions_to_add: permissionsToAdd,
+          permissions_to_remove: permissionsToRemove
+        });
+
+        if (!result.content?.[0]?.text || typeof result.content[0].text !== 'string') {
+          throw new Error('Invalid response content structure from updatePermissions');
+        }
+        const rawResponse = safeJsonParse(result.content[0].text);
+        if (!isValidRBACResponse(rawResponse)) {
+          throw new Error('Invalid RBAC response format');
+        }
+        return rawResponse.success === true;
+      } catch (error) {
+        console.error('❌ Failed to update persona permissions:', error);
+        return false;
+      }
+    },
+    getPersonaHierarchyTree: async function(
+      rootContextId?: string
+    ): Promise<PersonaHierarchyTree | null> {
+      try {
+        const result = await rbacTools.getHierarchyTree({
+          root_context_id: rootContextId
+        });
+
+        if (!result.content?.[0]?.text || typeof result.content[0].text !== 'string') {
+          throw new Error('Invalid response content structure from getHierarchyTree');
+        }
+        const rawResponse = safeJsonParse(result.content[0].text);
+        if (!isValidRBACResponse(rawResponse)) {
+          throw new Error('Invalid RBAC response format');
+        }
+        return rawResponse.result as PersonaHierarchyTree;
+      } catch (error) {
+        console.error('❌ Failed to get persona hierarchy tree:', error);
+        return null;
+      }
+    },
+    getPersonaSelfCapabilities: async function(
+      contextId: string
+    ): Promise<PersonaSelfCapabilities | null> {
+      try {
+        const result = await rbacTools.getSelfCapabilities({
+          context_id: contextId
+        });
+
+        if (!result.content?.[0]?.text || typeof result.content[0].text !== 'string') {
+          throw new Error('Invalid response content structure from getSelfCapabilities');
+        }
+        const rawResponse = safeJsonParse(result.content[0].text);
+        if (!isValidRBACResponse(rawResponse)) {
+          throw new Error('Invalid RBAC response format');
+        }
+        return rawResponse.result as PersonaSelfCapabilities;
+      } catch (error) {
+        console.error('❌ Failed to get persona self capabilities:', error);
+        return null;
+      }
+    },
+    cleanup: function(): void {
+      rbacTools.dispose();
+      console.log('🛑 RBAC PersonaManager cleaned up');
     }
   };
 
-  /**
-   * 人格権限の取得
-   */
-  rbacPersonaManager.getPersonaPermissions = async function(
-    contextId: string, 
-    includeHierarchy: boolean = false
-  ): Promise<any> {
-    try {
-      const result = await rbacTools.getPermissions({
-        context_id: contextId,
-        include_hierarchy: includeHierarchy,
-        use_cache: true
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      return response.success ? response.result : null;
-    } catch (error) {
-      console.error(`❌ Failed to get persona permissions for ${contextId}:`, error);
-      return null;
-    }
-  };
-
-  /**
-   * 人格権限チェック
-   */
-  rbacPersonaManager.checkPersonaPermission = async function(
-    contextId: string, 
-    action: string, 
-    resource: string, 
-    conditions?: Record<string, any>
-  ): Promise<boolean> {
-    try {
-      const result = await rbacTools.checkPermission({
-        context_id: contextId,
-        action: action,
-        resource: resource,
-        conditions: conditions
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      return response.success && response.result.permission_check.granted;
-    } catch (error) {
-      console.error(`❌ Permission check failed for ${contextId}:`, error);
-      return false;
-    }
-  };
-
-  /**
-   * 人格権限の更新
-   */
-  rbacPersonaManager.updatePersonaPermissions = async function(
-    contextId: string, 
-    permissionsToAdd?: Permission[], 
-    permissionsToRemove?: Permission[]
-  ): Promise<boolean> {
-    try {
-      const result = await rbacTools.updatePermissions({
-        context_id: contextId,
-        permissions_to_add: permissionsToAdd,
-        permissions_to_remove: permissionsToRemove,
-        recalculate_inheritance: true
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      return response.success;
-    } catch (error) {
-      console.error(`❌ Failed to update persona permissions for ${contextId}:`, error);
-      return false;
-    }
-  };
-
-  /**
-   * 人格階層ツリーの取得
-   */
-  rbacPersonaManager.getPersonaHierarchyTree = async function(rootContextId?: string): Promise<any> {
-    try {
-      const result = await rbacTools.getHierarchyTree({
-        root_context_id: rootContextId,
-        include_permissions: true
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      return response.success ? response.result : null;
-    } catch (error) {
-      console.error('❌ Failed to get persona hierarchy tree:', error);
-      return null;
-    }
-  };
-
-  /**
-   * 人格の自己能力認識
-   */
-  rbacPersonaManager.getPersonaSelfCapabilities = async function(contextId: string): Promise<any> {
-    try {
-      const result = await rbacTools.getSelfCapabilities({
-        context_id: contextId,
-        include_tools: true,
-        include_memory_scope: true,
-        include_hierarchy_position: true
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      return response.success ? response.result : null;
-    } catch (error) {
-      console.error(`❌ Failed to get self capabilities for ${contextId}:`, error);
-      return null;
-    }
-  };
-
-  // クリーンアップメソッドの拡張
-  const originalCleanup = rbacPersonaManager.cleanup?.bind(rbacPersonaManager);
-  rbacPersonaManager.cleanup = function() {
-    if (originalCleanup) {
-      originalCleanup();
-    }
-    rbacTools.dispose();
-    console.log('🛑 RBAC PersonaManager cleaned up');
-  };
+  // PersonaManagerとRBAC機能を組み合わせ
+  const extended = Object.assign(personaManager, rbacExtensions) as RBACPersonaManager;
 
   console.log('🔧 PersonaManager extended with RBAC capabilities');
-  return rbacPersonaManager;
+  return extended;
 }
 
 /**
@@ -344,8 +433,17 @@ export class PersonaRBACHelper {
 /**
  * RBAC統合のスキーマ検証
  */
-export function validateRBACIntegration(personaManager: any): boolean {
-  const requiredMethods = [
+export function validateRBACIntegration(personaManager: RBACPersonaManager): boolean {
+  const methods = [
+    personaManager.createPersonaHierarchy,
+    personaManager.getPersonaPermissions,
+    personaManager.checkPersonaPermission,
+    personaManager.updatePersonaPermissions,
+    personaManager.getPersonaHierarchyTree,
+    personaManager.getPersonaSelfCapabilities
+  ];
+
+  const methodNames = [
     'createPersonaHierarchy',
     'getPersonaPermissions', 
     'checkPersonaPermission',
@@ -354,9 +452,9 @@ export function validateRBACIntegration(personaManager: any): boolean {
     'getPersonaSelfCapabilities'
   ];
 
-  for (const method of requiredMethods) {
-    if (typeof personaManager[method] !== 'function') {
-      console.error(`❌ RBAC integration validation failed: missing method ${method}`);
+  for (let i = 0; i < methods.length; i++) {
+    if (typeof methods[i] !== 'function') {
+      console.error(`❌ RBAC integration validation failed: missing method ${methodNames[i]}`);
       return false;
     }
   }

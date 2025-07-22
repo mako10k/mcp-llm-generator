@@ -5,6 +5,15 @@
 
 import { BaseLLMProvider, LLMResponse, Message, LLMRequestOptions } from './LLMProvider.js';
 
+// Anthropic SDK公式型を使用
+import type { 
+  MessageCreateParams,
+  Message as AnthropicMessage,
+  ContentBlock,
+  Tool,
+  ToolChoice
+} from '@anthropic-ai/sdk/resources/messages/messages.js';
+
 export interface ClaudeConfig {
   apiKey?: string;
   baseURL?: string;
@@ -56,26 +65,27 @@ export class ClaudeProvider extends BaseLLMProvider {
         system,
         messages: formattedMessages,
         tools: options.tools ? this.formatTools(options.tools) : undefined,
-        tool_choice: options.toolChoice,
+        tool_choice: this.formatToolChoice(options.toolChoice),
         stream: false,
         ...options.metadata
       });
 
-      const content = response.content[0];
+      const messageResponse = response as AnthropicMessage;
+      const content = messageResponse.content[0] as ContentBlock;
       return {
-        content: content.type === 'text' ? content.text : '',
-        model: response.model,
-        stopReason: response.stop_reason,
-        usage: response.usage ? {
-          inputTokens: response.usage.input_tokens,
-          outputTokens: response.usage.output_tokens,
-          totalTokens: response.usage.input_tokens + response.usage.output_tokens
+        content: content.type === 'text' ? (content as ContentBlock & { text: string }).text : '',
+        model: messageResponse.model,
+        stopReason: messageResponse.stop_reason || undefined,
+        usage: messageResponse.usage ? {
+          inputTokens: messageResponse.usage.input_tokens,
+          outputTokens: messageResponse.usage.output_tokens,
+          totalTokens: messageResponse.usage.input_tokens + messageResponse.usage.output_tokens
         } : undefined,
-        finishReason: response.stop_reason,
+        finishReason: messageResponse.stop_reason || undefined,
         metadata: {
-          id: response.id,
-          type: response.type,
-          role: response.role
+          id: messageResponse.id,
+          type: messageResponse.type,
+          role: messageResponse.role
         }
       };
     } catch (error) {
@@ -85,7 +95,7 @@ export class ClaudeProvider extends BaseLLMProvider {
 
   async generateWithTools(
     messages: Message[],
-    tools: any[],
+    tools: unknown[],
     options: LLMRequestOptions = {}
   ): Promise<LLMResponse> {
     return this.generateMessage(messages, {
@@ -111,14 +121,19 @@ export class ClaudeProvider extends BaseLLMProvider {
         system,
         messages: formattedMessages,
         tools: options.tools ? this.formatTools(options.tools) : undefined,
-        tool_choice: options.toolChoice,
+        tool_choice: this.formatToolChoice(options.toolChoice),
         stream: true
       }, true);
 
       let buffer = '';
       const decoder = new TextDecoder();
 
-      for await (const chunk of response.body) {
+      const streamResponse = response as Response;
+      if (!streamResponse.body) {
+        throw new Error('Response body is null');
+      }
+
+      for await (const chunk of streamResponse.body) {
         buffer += decoder.decode(chunk, { stream: true });
         const lines = buffer.split('\\n');
         buffer = lines.pop() || '';
@@ -149,36 +164,47 @@ export class ClaudeProvider extends BaseLLMProvider {
     }
   }
 
-  private formatMessages(messages: Message[]): { system?: string; messages: any[] } {
+  private formatMessages(messages: Message[]): { system?: string; messages: Array<{ role: 'user' | 'assistant'; content: string }> } {
     const systemMessage = messages.find(msg => msg.role === 'system');
     const otherMessages = messages.filter(msg => msg.role !== 'system');
 
     return {
       system: systemMessage?.content,
       messages: otherMessages.map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        role: msg.role === 'assistant' ? 'assistant' as const : 'user' as const,
         content: msg.content
       }))
     };
   }
 
-  private formatTools(tools: any[]): any[] {
-    return tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      input_schema: tool.inputSchema || tool.parameters || {
-        type: 'object',
-        properties: {},
-        required: []
-      }
-    }));
+  private formatTools(tools: unknown[]): Tool[] {
+    return tools.map(toolItem => {
+      const tool = toolItem as Tool;
+      return {
+        name: tool.name,
+        description: tool.description,
+        input_schema: tool.input_schema || {
+          type: 'object',
+          properties: {},
+          required: []
+        }
+      };
+    });
+  }
+
+  private formatToolChoice(toolChoice: unknown): ToolChoice | undefined {
+    if (!toolChoice) return undefined;
+    
+    // Type assertion to handle unknown type safely
+    const choice = toolChoice as ToolChoice;
+    return choice;
   }
 
   private async makeRequest(
     endpoint: string,
-    body?: any,
+    body?: MessageCreateParams,
     stream = false
-  ): Promise<any> {
+  ): Promise<AnthropicMessage | Response> {
     const headers: Record<string, string> = {
       'x-api-key': this.apiKey,
       'anthropic-version': this.version,
@@ -193,8 +219,14 @@ export class ClaudeProvider extends BaseLLMProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      const error = new Error(`Claude API error: ${response.status} ${response.statusText}`);
-      (error as any).response = {
+      const error = new Error(`Claude API error: ${response.status} ${response.statusText}`) as Error & {
+        response?: {
+          status: number;
+          statusText: string;
+          body: string;
+        };
+      };
+      error.response = {
         status: response.status,
         statusText: response.statusText,
         body: errorBody
@@ -203,7 +235,7 @@ export class ClaudeProvider extends BaseLLMProvider {
     }
 
     if (stream) {
-      return response;
+      return response as Response;
     }
 
     return response.json();
