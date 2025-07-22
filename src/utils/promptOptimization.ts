@@ -275,6 +275,106 @@ export class PromptTokenManager {
   }
 
   /**
+   * Step4マージ機能用: マージ前後のトークン数比較分析
+   */
+  analyzeTokenReduction(originalPrompt: string, mergedPrompt: string, model: string = 'gpt-4'): {
+    originalTokens: number;
+    mergedTokens: number;
+    reduction: number;
+    reductionPercentage: number;
+    efficiency: 'excellent' | 'good' | 'moderate' | 'poor';
+  } {
+    const originalTokens = this.calculateTokens(originalPrompt, model);
+    const mergedTokens = this.calculateTokens(mergedPrompt, model);
+    const reduction = originalTokens - mergedTokens;
+    const reductionPercentage = originalTokens > 0 ? (reduction / originalTokens) * 100 : 0;
+
+    let efficiency: 'excellent' | 'good' | 'moderate' | 'poor';
+    if (reductionPercentage >= 30) efficiency = 'excellent';
+    else if (reductionPercentage >= 15) efficiency = 'good';
+    else if (reductionPercentage >= 5) efficiency = 'moderate';
+    else efficiency = 'poor';
+
+    return {
+      originalTokens,
+      mergedTokens,
+      reduction,
+      reductionPercentage: Math.round(reductionPercentage * 100) / 100,
+      efficiency
+    };
+  }
+
+  /**
+   * Step4マージ機能用: トークン制限チェック
+   */
+  checkTokenLimits(text: string, maxTokens: number, model: string = 'gpt-4'): {
+    currentTokens: number;
+    withinLimit: boolean;
+    excess: number;
+    limitUtilization: number;
+  } {
+    const currentTokens = this.calculateTokens(text, model);
+    const withinLimit = currentTokens <= maxTokens;
+    const excess = Math.max(0, currentTokens - maxTokens);
+    const limitUtilization = maxTokens > 0 ? (currentTokens / maxTokens) * 100 : 0;
+
+    return {
+      currentTokens,
+      withinLimit,
+      excess,
+      limitUtilization: Math.round(limitUtilization * 100) / 100
+    };
+  }
+
+  /**
+   * Step4マージ機能用: プロンプト構成要素の推定トークン分析
+   */
+  analyzePromptComponents(prompt: string, model: string = 'gpt-4'): {
+    totalTokens: number;
+    estimatedBreakdown: {
+      instructions: number;
+      constraints: number;
+      examples: number;
+      other: number;
+    };
+  } {
+    const totalTokens = this.calculateTokens(prompt, model);
+    
+    // 簡易的な構成要素推定（キーワードベース）
+    const lines = prompt.split('\n');
+    let instructionLines = 0;
+    let constraintLines = 0;
+    let exampleLines = 0;
+    let otherLines = 0;
+
+    for (const line of lines) {
+      const lowerLine = line.toLowerCase();
+      if (lowerLine.includes('you are') || lowerLine.includes('your role') || lowerLine.includes('act as')) {
+        instructionLines++;
+      } else if (lowerLine.includes('do not') || lowerLine.includes('never') || lowerLine.includes('constraint')) {
+        constraintLines++;
+      } else if (lowerLine.includes('example') || lowerLine.includes('for instance') || lowerLine.includes('```')) {
+        exampleLines++;
+      } else if (line.trim()) {
+        otherLines++;
+      }
+    }
+
+    const totalLines = instructionLines + constraintLines + exampleLines + otherLines;
+    const avgTokensPerLine = totalLines > 0 ? totalTokens / totalLines : 0;
+
+    return {
+      totalTokens,
+      estimatedBreakdown: {
+        instructions: Math.round(instructionLines * avgTokensPerLine),
+        constraints: Math.round(constraintLines * avgTokensPerLine),
+        examples: Math.round(exampleLines * avgTokensPerLine),
+        other: Math.round(otherLines * avgTokensPerLine)
+      }
+    };
+  }
+
+  /**
    * リソースクリーンアップ
    */
   dispose(): void {
