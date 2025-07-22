@@ -5,7 +5,7 @@
  * Following QA Engineer approved Test Quality Guidelines
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CapabilityAwarenessService } from '../src/capability/CapabilityAwarenessService.js';
 import { CapabilityAwarenessMCPTools } from '../src/capability/CapabilityAwarenessMCPTools.js';
 import { MCPToolResponse } from '../src/types/mcp-responses.js';
@@ -183,11 +183,11 @@ describe('Step3 Capability Awareness System', () => {
       it('should provide all required MCP tool definitions', () => {
         const toolDefs = mcpTools.getToolDefinitions();
 
-        expect(toolDefs).toHaveProperty('capability-get-self-awareness');
-        expect(toolDefs).toHaveProperty('capability-get-other-awareness');
-        expect(toolDefs).toHaveProperty('capability-process-inheritance');
-        expect(toolDefs).toHaveProperty('capability-get-matrix');
-        expect(toolDefs).toHaveProperty('capability-analyze-hierarchy');
+        expect(toolDefs).toHaveProperty('persona-inspect-capabilities');
+        expect(toolDefs).toHaveProperty('persona-evaluate-interaction');
+        expect(toolDefs).toHaveProperty('persona-transfer-knowledge');
+        expect(toolDefs).toHaveProperty('group-get-capability-overview');
+        expect(toolDefs).toHaveProperty('network-analyze-structure');
 
         // Verify each tool has required properties
         Object.values(toolDefs).forEach((toolDef: any) => {
@@ -198,9 +198,9 @@ describe('Step3 Capability Awareness System', () => {
     });
 
     describe('MCP Tool Call Handling', () => {
-      it('should handle capability-get-self-awareness tool call', async () => {
+      it('should handle persona-inspect-capabilities tool call', async () => {
         const args = { context_id: 'test-context-001' };
-        const response = await mcpTools.handleToolCall('capability-get-self-awareness', args);
+        const response = await mcpTools.handleToolCall('persona-inspect-capabilities', args);
 
         expect(response).toHaveProperty('content');
         expect(Array.isArray(response.content)).toBe(true);
@@ -211,34 +211,34 @@ describe('Step3 Capability Awareness System', () => {
         // Verify response is valid JSON
         const responseData = JSON.parse(response.content[0].text);
         expect(responseData).toHaveProperty('success', true);
-        expect(responseData).toHaveProperty('tool', 'capability-get-self-awareness');
+        expect(responseData).toHaveProperty('tool', 'persona-inspect-capabilities');
         expect(responseData).toHaveProperty('data');
       });
 
-      it('should handle capability-get-other-awareness tool call', async () => {
+      it('should handle persona-evaluate-interaction tool call', async () => {
         const args = {
           observer_context_id: 'observer-001',
           target_context_id: 'target-001'
         };
-        const response = await mcpTools.handleToolCall('capability-get-other-awareness', args);
+        const response = await mcpTools.handleToolCall('persona-evaluate-interaction', args);
 
         expect(response).toHaveProperty('content');
         const responseData = JSON.parse(response.content[0].text);
         expect(responseData).toHaveProperty('success', true);
-        expect(responseData).toHaveProperty('tool', 'capability-get-other-awareness');
+        expect(responseData).toHaveProperty('tool', 'persona-evaluate-interaction');
       });
 
-      it('should handle capability-process-inheritance tool call', async () => {
+      it('should handle persona-transfer-knowledge tool call', async () => {
         const args = {
           parent_context_id: 'parent-001',
           child_context_id: 'child-001'
         };
-        const response = await mcpTools.handleToolCall('capability-process-inheritance', args);
+        const response = await mcpTools.handleToolCall('persona-transfer-knowledge', args);
 
         expect(response).toHaveProperty('content');
         const responseData = JSON.parse(response.content[0].text);
         expect(responseData).toHaveProperty('success', true);
-        expect(responseData).toHaveProperty('tool', 'capability-process-inheritance');
+        expect(responseData).toHaveProperty('tool', 'persona-transfer-knowledge');
       });
 
       it('should handle unknown tool gracefully', async () => {
@@ -251,7 +251,7 @@ describe('Step3 Capability Awareness System', () => {
       });
 
       it('should handle invalid arguments gracefully', async () => {
-        const response = await mcpTools.handleToolCall('capability-get-self-awareness', {});
+        const response = await mcpTools.handleToolCall('persona-inspect-capabilities', {});
 
         expect(response).toHaveProperty('content');
         expect(response).toHaveProperty('isError', true);
@@ -262,7 +262,7 @@ describe('Step3 Capability Awareness System', () => {
     describe('Response Format Compliance', () => {
       it('should return MCP-compliant response format', async () => {
         const args = { context_id: 'test-context' };
-        const response = await mcpTools.handleToolCall('capability-get-self-awareness', args);
+        const response = await mcpTools.handleToolCall('persona-inspect-capabilities', args);
 
         // Verify MCP response schema compliance
         expect(response).toHaveProperty('content');
@@ -297,7 +297,7 @@ describe('Step3 Capability Awareness System', () => {
       const serviceResult = await service.getSelfAwareness(contextId);
 
       // Get self-awareness via MCP tools
-      const mcpResponse = await mcpTools.handleToolCall('capability-get-self-awareness', { context_id: contextId });
+      const mcpResponse = await mcpTools.handleToolCall('persona-inspect-capabilities', { context_id: contextId });
       const mcpData = JSON.parse(mcpResponse.content[0].text);
 
       // Verify data consistency
@@ -313,7 +313,7 @@ describe('Step3 Capability Awareness System', () => {
       // Create multiple concurrent operations
       for (let i = 0; i < 5; i++) {
         promises.push(
-          mcpTools.handleToolCall('capability-get-self-awareness', { context_id: `concurrent-${i}` })
+          mcpTools.handleToolCall('persona-inspect-capabilities', { context_id: `concurrent-${i}` })
         );
       }
 

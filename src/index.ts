@@ -18,6 +18,7 @@ import { ContextMemoryIntegration } from "./contextMemory/index.js";
 import { LLMProviderManager } from "./llm/index.js";
 import { registerSharedMemoryTools } from "./tools/shared-memory-integration-v2.js";
 import { CapabilityAwarenessMCPTools } from "./capability/CapabilityAwarenessMCPTools.js";
+import { SystemPromptMergeEngine } from "./capability/SystemPromptMergeEngine.js";
 import Database from 'better-sqlite3';
 
 // Template structure definition
@@ -977,18 +978,18 @@ server.registerTool(
 
 // Step3: Capability Awareness Tools Registration Helper
 async function registerCapabilityAwarenessTools(server: any, capabilityTools: CapabilityAwarenessMCPTools) {
-  // 自覚機能ツール
+  // Self-awareness capability tool
   server.registerTool(
-    "capability-get-self-awareness",
+    "persona-inspect-capabilities",
     {
-      title: "Get Self Awareness",
-      description: "指定された人格が自身の能力・制約・責務を認識する（自覚機能）",
+      title: "Persona Inspect Capabilities",
+      description: "Enable specified persona to recognize own capabilities, constraints, and responsibilities (self-awareness)",
       inputSchema: {
-        context_id: z.string().describe("能力自覚情報を取得する人格のコンテキストID")
+        context_id: z.string().describe("Context ID of the persona to get capability self-awareness information")
       }
     },
     async (args: any) => {
-      const result = await capabilityTools.handleToolCall("capability-get-self-awareness", args);
+      const result = await capabilityTools.handleToolCall("persona-inspect-capabilities", args);
       // MCP SDK CallToolResult形式に変換
       return {
         content: result.content,
@@ -997,20 +998,20 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
     }
   );
 
-  // 他覚機能ツール
+  // Other-awareness capability tool
   server.registerTool(
-    "capability-get-other-awareness",
+    "persona-evaluate-interaction",
     {
-      title: "Get Other Awareness",
-      description: "観察者人格が他の人格の能力を観察・評価する（他覚機能）",
+      title: "Persona Evaluate Interaction",
+      description: "Enable observer persona to observe and evaluate other personas capabilities (other-awareness)",
       inputSchema: {
-        observer_context_id: z.string().describe("観察者の人格コンテキストID"),
-        target_context_id: z.string().describe("観察対象の人格コンテキストID")
+        observer_context_id: z.string().describe("Observer persona context ID"),
+        target_context_id: z.string().describe("Target persona context ID to observe")
       }
     },
     async (args: any) => {
-      const result = await capabilityTools.handleToolCall("capability-get-other-awareness", args);
-      // MCP SDK CallToolResult形式に変換
+      const result = await capabilityTools.handleToolCall("persona-evaluate-interaction", args);
+      // Convert to MCP SDK CallToolResult format
       return {
         content: result.content,
         isError: result.isError
@@ -1018,20 +1019,20 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
     }
   );
 
-  // 継承機能ツール
+  // Inheritance capability tool
   server.registerTool(
-    "capability-process-inheritance",
+    "persona-transfer-knowledge",
     {
-      title: "Process Capability Inheritance",
-      description: "親から子への能力継承を処理する（継承機能）",
+      title: "Persona Transfer Knowledge", 
+      description: "Process capability inheritance from parent to child (inheritance function)",
       inputSchema: {
-        parent_context_id: z.string().describe("親人格のコンテキストID"),
-        child_context_id: z.string().describe("子人格のコンテキストID")
+        parent_context_id: z.string().describe("Parent persona context ID"),
+        child_context_id: z.string().describe("Child persona context ID")
       }
     },
     async (args: any) => {
-      const result = await capabilityTools.handleToolCall("capability-process-inheritance", args);
-      // MCP SDK CallToolResult形式に変換
+      const result = await capabilityTools.handleToolCall("persona-transfer-knowledge", args);
+      // Convert to MCP SDK CallToolResult format
       return {
         content: result.content,
         isError: result.isError
@@ -1039,20 +1040,20 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
     }
   );
 
-  // 能力マトリックスツール
+  // Capability matrix tool
   server.registerTool(
-    "capability-get-matrix",
+    "group-get-capability-overview",
     {
-      title: "Get Capability Matrix",
-      description: "複数人格の能力マトリックスと継承関係を一覧表示",
+      title: "Group Get Capability Overview",
+      description: "Display capability matrix and inheritance relationships for multiple personas",
       inputSchema: {
-        context_ids: z.array(z.string()).optional().describe("対象人格のリスト（省略時は全人格）"),
-        include_inheritance: z.boolean().default(true).describe("継承関係の情報を含めるか")
+        context_ids: z.array(z.string()).optional().describe("List of target personas (all personas if omitted)"),
+        include_inheritance: z.boolean().default(true).describe("Whether to include inheritance relationship information")
       }
     },
     async (args: any) => {
-      const result = await capabilityTools.handleToolCall("capability-get-matrix", args);
-      // MCP SDK CallToolResult形式に変換
+      const result = await capabilityTools.handleToolCall("group-get-capability-overview", args);
+      // Convert to MCP SDK CallToolResult format
       return {
         content: result.content,
         isError: result.isError
@@ -1060,19 +1061,19 @@ async function registerCapabilityAwarenessTools(server: any, capabilityTools: Ca
     }
   );
 
-  // 階層分析ツール
+  // Hierarchy analysis tool
   server.registerTool(
-    "capability-analyze-hierarchy",
+    "network-analyze-structure",
     {
-      title: "Analyze Hierarchy",
-      description: "人格階層全体の能力分布と最適化提案を分析",
+      title: "Network Analyze Structure",
+      description: "Analyze capability distribution and optimization suggestions for entire persona hierarchy",
       inputSchema: {
-        root_context_id: z.string().optional().describe("分析開始のルート人格ID（省略時は全階層）")
+        root_context_id: z.string().optional().describe("Root persona ID to start analysis (all hierarchy if omitted)")
       }
     },
     async (args: any) => {
-      const result = await capabilityTools.handleToolCall("capability-analyze-hierarchy", args);
-      // MCP SDK CallToolResult形式に変換
+      const result = await capabilityTools.handleToolCall("network-analyze-structure", args);
+      // Convert to MCP SDK CallToolResult format
       return {
         content: result.content,
         isError: result.isError

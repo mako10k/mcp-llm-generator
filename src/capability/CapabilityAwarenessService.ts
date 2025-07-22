@@ -40,7 +40,7 @@ const OtherAwarenessInfoSchema = z.object({
   target_context_id: z.string(),
   observer_context_id: z.string(),
   observable_capabilities: CapabilitySchema,
-  relationship: z.enum(['parent', 'child', 'sibling', 'descendant', 'ancestor', 'unrelated']),
+  relationship: z.enum(['parent', 'child', 'sibling', 'descendant', 'ancestor', 'unrelated', 'self']),
   interaction_history: z.array(z.any()).default([]),
   assessment: z.object({
     strengths: z.array(z.string()).default([]),
@@ -59,7 +59,58 @@ export class CapabilityAwarenessService {
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);
+    this.initializeTables();
     this.initializeQueries();
+  }
+
+  private initializeTables() {
+    // Initialize database tables using existing schema patterns
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS contexts (
+        context_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS persona_capabilities (
+        context_id TEXT PRIMARY KEY,
+        expertise TEXT NOT NULL DEFAULT '[]',
+        tools TEXT NOT NULL DEFAULT '[]', 
+        restrictions TEXT NOT NULL DEFAULT '[]',
+        performance_metrics TEXT,
+        learning_capabilities TEXT,
+        is_public BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (context_id) REFERENCES contexts(context_id) ON DELETE CASCADE
+      )
+    `);
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS persona_hierarchy (
+        ancestor_id TEXT NOT NULL,
+        descendant_id TEXT NOT NULL,
+        depth INTEGER NOT NULL,
+        is_direct BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (ancestor_id, descendant_id),
+        FOREIGN KEY (ancestor_id) REFERENCES contexts(context_id) ON DELETE CASCADE,
+        FOREIGN KEY (descendant_id) REFERENCES contexts(context_id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create indexes for performance optimization
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_persona_capabilities_context ON persona_capabilities(context_id);
+      CREATE INDEX IF NOT EXISTS idx_persona_capabilities_public ON persona_capabilities(is_public) WHERE is_public = 1;
+      CREATE INDEX IF NOT EXISTS idx_persona_hierarchy_ancestor ON persona_hierarchy(ancestor_id);
+      CREATE INDEX IF NOT EXISTS idx_persona_hierarchy_descendant ON persona_hierarchy(descendant_id);
+      CREATE INDEX IF NOT EXISTS idx_persona_hierarchy_depth ON persona_hierarchy(depth);
+    `);
   }
 
   private initializeQueries() {
@@ -133,9 +184,12 @@ export class CapabilityAwarenessService {
   async getSelfAwareness(contextId: string): Promise<SelfAwarenessInfo> {
     try {
       // 1. 自身の能力情報を取得
-      const capabilities = this.queries.getPersonaCapabilities.get(contextId);
+      let capabilities = this.queries.getPersonaCapabilities.get(contextId);
+      
+      // If capabilities don't exist, create default entry for new context
       if (!capabilities) {
-        throw new Error(`Persona capabilities not found for context: ${contextId}`);
+        await this.createDefaultCapabilities(contextId);
+        capabilities = this.queries.getPersonaCapabilities.get(contextId);
       }
 
       // 2. 階層位置情報を取得
@@ -148,8 +202,8 @@ export class CapabilityAwarenessService {
           expertise: this.parseJsonArray(capabilities.expertise),
           tools: this.parseJsonArray(capabilities.tools),
           restrictions: this.parseJsonArray(capabilities.restrictions),
-          performance_metrics: capabilities.performance_metrics,
-          learning_capabilities: capabilities.learning_capabilities,
+          performance_metrics: capabilities.performance_metrics || undefined,
+          learning_capabilities: capabilities.learning_capabilities || undefined,
           hierarchy_level: hierarchyPosition.depth,
           inherited_from: await this.getInheritanceSources(contextId)
         },
@@ -172,6 +226,11 @@ export class CapabilityAwarenessService {
    */
   async getOtherAwareness(observerContextId: string, targetContextId: string): Promise<OtherAwarenessInfo> {
     try {
+      // Input validation
+      if (!observerContextId || !targetContextId) {
+        throw new Error('Observer context ID and target context ID are required');
+      }
+
       // 1. 対象人格の能力情報を取得（観察可能な範囲のみ）
       const targetCapabilities = await this.getObservableCapabilities(observerContextId, targetContextId);
       
@@ -197,28 +256,47 @@ export class CapabilityAwarenessService {
 
   /**
    * Step3-3: 継承機能実装
-   * 親から子への能力継承（制限付き）を処理する
+   * 親人格から子人格への能力継承を処理
    */
   async processCapabilityInheritance(parentContextId: string, childContextId: string): Promise<void> {
     try {
-      // 1. 親子関係を確認
+      // Input validation
+      if (!parentContextId || !childContextId) {
+        throw new Error('Parent context ID and child context ID are required');
+      }
+
+      // Circular inheritance detection
+      if (parentContextId === childContextId) {
+        throw new Error('Self-inheritance not allowed');
+      }
+
+      // Check for existing circular relationships (if child is already parent of parent)
+      const parentAncestors = this.queries.getAncestors.all(parentContextId);
+      const wouldCreateCircle = parentAncestors.some((ancestor: any) => ancestor.ancestor_id === childContextId);
+      if (wouldCreateCircle) {
+        throw new Error('Circular inheritance detected');
+      }
+
+      // 0. 親と子の能力エントリが存在しない場合は作成
+      let parentCapabilities = this.queries.getPersonaCapabilities.get(parentContextId);
+      if (!parentCapabilities) {
+        await this.createDefaultCapabilities(parentContextId);
+        parentCapabilities = this.queries.getPersonaCapabilities.get(parentContextId);
+      }
+
+      let childCapabilities = this.queries.getPersonaCapabilities.get(childContextId);
+      if (!childCapabilities) {
+        await this.createDefaultCapabilities(childContextId);
+        childCapabilities = this.queries.getPersonaCapabilities.get(childContextId);
+      }
+
+      // 1. 親子関係の確認（存在しない場合は作成）
       const isDirectChild = this.queries.getDirectChildren.get(parentContextId)
         ?.find((child: any) => child.descendant_id === childContextId);
       
       if (!isDirectChild) {
-        throw new Error(`${childContextId} is not a direct child of ${parentContextId}`);
-      }
-
-      // 2. 親の能力を取得
-      const parentCapabilities = this.queries.getPersonaCapabilities.get(parentContextId);
-      if (!parentCapabilities) {
-        throw new Error(`Parent capabilities not found: ${parentContextId}`);
-      }
-
-      // 3. 子の現在の能力を取得
-      const childCapabilities = this.queries.getPersonaCapabilities.get(childContextId);
-      if (!childCapabilities) {
-        throw new Error(`Child capabilities not found: ${childContextId}`);
+        // Create parent-child relationship if it doesn't exist
+        await this.createHierarchyRelationship(parentContextId, childContextId);
       }
 
       // 4. 継承ルールを適用
@@ -245,6 +323,47 @@ export class CapabilityAwarenessService {
   }
 
   // ヘルパーメソッド群
+
+  private async createDefaultCapabilities(contextId: string): Promise<void> {
+    // Create context entry if it doesn't exist
+    const insertContextQuery = this.db.prepare(`
+      INSERT OR IGNORE INTO contexts (context_id, name, description) 
+      VALUES (?, ?, ?)
+    `);
+    insertContextQuery.run(contextId, contextId, 'Auto-created context');
+
+    // Create default capabilities entry
+    const insertCapabilitiesQuery = this.db.prepare(`
+      INSERT OR IGNORE INTO persona_capabilities 
+      (context_id, expertise, tools, restrictions, performance_metrics, learning_capabilities) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    insertCapabilitiesQuery.run(
+      contextId,
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      null,
+      null
+    );
+  }
+
+  private async createHierarchyRelationship(parentContextId: string, childContextId: string): Promise<void> {
+    // Create direct parent-child relationship (depth = 1)
+    const insertHierarchyQuery = this.db.prepare(`
+      INSERT OR IGNORE INTO persona_hierarchy (ancestor_id, descendant_id, depth, is_direct) 
+      VALUES (?, ?, 1, 1)
+    `);
+    insertHierarchyQuery.run(parentContextId, childContextId);
+
+    // Create self-reference entries if they don't exist
+    const insertSelfReferenceQuery = this.db.prepare(`
+      INSERT OR IGNORE INTO persona_hierarchy (ancestor_id, descendant_id, depth, is_direct) 
+      VALUES (?, ?, 0, 0)
+    `);
+    insertSelfReferenceQuery.run(parentContextId, parentContextId);
+    insertSelfReferenceQuery.run(childContextId, childContextId);
+  }
 
   private async getHierarchyPosition(contextId: string) {
     const ancestors = this.queries.getAncestors.all(contextId);
@@ -313,9 +432,12 @@ export class CapabilityAwarenessService {
   }
 
   private async getObservableCapabilities(observerContextId: string, targetContextId: string): Promise<CapabilityInfo> {
-    const targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId);
+    let targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId);
+    
+    // If target capabilities don't exist, create default entry
     if (!targetCapabilities) {
-      throw new Error(`Target capabilities not found: ${targetContextId}`);
+      await this.createDefaultCapabilities(targetContextId);
+      targetCapabilities = this.queries.getPersonaCapabilities.get(targetContextId);
     }
 
     // 観察者の権限に基づいて表示可能な情報を制限
@@ -337,14 +459,19 @@ export class CapabilityAwarenessService {
       expertise: this.parseJsonArray(targetCapabilities.expertise),
       tools: this.parseJsonArray(targetCapabilities.tools),
       restrictions: this.parseJsonArray(targetCapabilities.restrictions),
-      performance_metrics: targetCapabilities.performance_metrics,
-      learning_capabilities: targetCapabilities.learning_capabilities,
+      performance_metrics: targetCapabilities.performance_metrics || undefined,
+      learning_capabilities: targetCapabilities.learning_capabilities || undefined,
       hierarchy_level: 0, // TODO: 階層レベルを計算
       inherited_from: await this.getInheritanceSources(targetContextId)
     };
   }
 
-  private async determineRelationship(observerContextId: string, targetContextId: string): Promise<'parent' | 'child' | 'sibling' | 'descendant' | 'ancestor' | 'unrelated'> {
+  private async determineRelationship(observerContextId: string, targetContextId: string): Promise<'parent' | 'child' | 'sibling' | 'descendant' | 'ancestor' | 'unrelated' | 'self'> {
+    // 同一コンテキストの場合
+    if (observerContextId === targetContextId) {
+      return 'self';
+    }
+
     // 直接の親子関係をチェック
     const isDirectParent = this.queries.getDirectParent.get(targetContextId)?.ancestor_id === observerContextId;
     const isDirectChild = this.queries.getDirectChildren.get(observerContextId)

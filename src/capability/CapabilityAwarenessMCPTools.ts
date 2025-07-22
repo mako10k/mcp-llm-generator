@@ -6,14 +6,9 @@
  */
 
 import { z } from 'zod';
-import { CapabilityAwarenessService, SelfAwarenessInfo, OtherAwarenessInfo } from './CapabilityAwarenessService.js';
+import { CapabilityAwarenessService } from './CapabilityAwarenessService.js';
 import { 
   MCPToolResponse,
-  SelfAwarenessResponse,
-  OtherAwarenessResponse,
-  InheritanceResponse,
-  CapabilityMatrixResponse,
-  HierarchyAnalysisResponse,
   createMCPTextResponse,
   createMCPErrorResponse
 } from '../types/mcp-responses.js';
@@ -49,29 +44,29 @@ export class CapabilityAwarenessMCPTools {
    * MCP Tool: Self-awareness function
    * Get self-recognition information for specified persona
    */
-  getToolDefinitions() {
+  getToolDefinitions(): Record<string, { description: string; inputSchema: any }> {
     return {
-      'capability-get-self-awareness': {
+      'persona-inspect-capabilities': {
         description: 'Enable specified persona to recognize own capabilities, constraints, and responsibilities (self-awareness)',
         inputSchema: GetSelfAwarenessSchema
       },
       
-      'capability-get-other-awareness': {
+      'persona-evaluate-interaction': {
         description: 'Enable observer persona to observe and evaluate other personas capabilities (other-awareness)',
         inputSchema: GetOtherAwarenessSchema
       },
       
-      'capability-process-inheritance': {
+      'persona-transfer-knowledge': {
         description: 'Process capability inheritance from parent to child (inheritance function)',
         inputSchema: ProcessInheritanceSchema
       },
       
-      'capability-get-matrix': {
+      'group-get-capability-overview': {
         description: 'Display capability matrix and inheritance relationships for multiple personas',
         inputSchema: GetCapabilityMatrixSchema
       },
       
-      'capability-analyze-hierarchy': {
+      'network-analyze-structure': {
         description: 'Analyze capability distribution and optimization suggestions for entire persona hierarchy',
         inputSchema: z.object({
           root_context_id: z.string().optional().describe('Root persona ID to start analysis (all hierarchy if omitted)')
@@ -86,19 +81,19 @@ export class CapabilityAwarenessMCPTools {
   async handleToolCall(toolName: string, args: any): Promise<MCPToolResponse> {
     try {
       switch (toolName) {
-        case 'capability-get-self-awareness':
+        case 'persona-inspect-capabilities':
           return await this.handleGetSelfAwareness(args);
           
-        case 'capability-get-other-awareness':
+        case 'persona-evaluate-interaction':
           return await this.handleGetOtherAwareness(args);
           
-        case 'capability-process-inheritance':
+        case 'persona-transfer-knowledge':
           return await this.handleProcessInheritance(args);
           
-        case 'capability-get-matrix':
+        case 'group-get-capability-overview':
           return await this.handleGetCapabilityMatrix(args);
           
-        case 'capability-analyze-hierarchy':
+        case 'network-analyze-structure':
           return await this.handleAnalyzeHierarchy(args);
           
         default:
@@ -120,8 +115,9 @@ export class CapabilityAwarenessMCPTools {
     // MCP仕様: text値はJSONパース可能文字列である必要
     const responseData = {
       success: true,
-      tool: 'capability-get-self-awareness',
+      tool: 'persona-inspect-capabilities',
       context_id,
+      data: selfAwareness,
       capabilities_summary: {
         expertise_count: selfAwareness.own_capabilities.expertise.length,
         tools_count: selfAwareness.own_capabilities.tools.length,
@@ -146,9 +142,10 @@ export class CapabilityAwarenessMCPTools {
     // MCP仕様: text値はJSONパース可能文字列である必要
     const responseData = {
       success: true,
-      tool: 'capability-get-other-awareness',
+      tool: 'persona-evaluate-interaction',
       observer_context_id,
       target_context_id,
+      data: otherAwareness,
       relationship: otherAwareness.relationship,
       observable_capabilities_count: otherAwareness.observable_capabilities?.expertise?.length || 0
     };
@@ -167,9 +164,10 @@ export class CapabilityAwarenessMCPTools {
     // MCP仕様: text値はJSONパース可能文字列である必要
     const responseData = {
       success: true,
-      tool: 'capability-process-inheritance',
+      tool: 'persona-transfer-knowledge',
       parent_context_id,
       child_context_id,
+      data: updatedChildAwareness,
       inheritance_completed: true,
       inherited_capabilities_count: {
         expertise: updatedChildAwareness.own_capabilities.expertise.length,
@@ -194,7 +192,8 @@ export class CapabilityAwarenessMCPTools {
     // MCP仕様: text値はJSONパース可能文字列である必要
     const responseData = {
       success: true,
-      tool: 'capability-get-matrix',
+      tool: 'group-get-capability-overview',
+      data: matrix,
       total_personas: matrix.personas.length,
       unique_expertise: matrix.statistics.unique_expertise_count,
       unique_tools: matrix.statistics.unique_tools_count,
@@ -214,7 +213,8 @@ export class CapabilityAwarenessMCPTools {
     // MCP仕様: text値はJSONパース可能文字列である必要
     const responseData = {
       success: true,
-      tool: 'capability-analyze-hierarchy',
+      tool: 'network-analyze-structure',
+      data: analysis,
       analyzed_personas: analysis.total_personas,
       optimization_suggestions_count: analysis.optimization_suggestions.length,
       potential_improvements_count: analysis.potential_improvements.length,
