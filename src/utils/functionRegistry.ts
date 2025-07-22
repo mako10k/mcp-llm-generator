@@ -6,6 +6,7 @@
 import Database from 'better-sqlite3';
 import { PersonaLogger } from './personaLogger.js';
 import { FunctionCallCapability, PersonaFunctionRegistry } from './functionCallDispatcher.js';
+import { DatabaseInitializer } from '../database/DatabaseInitializer';
 
 // =============================================================================
 // Type Definitions
@@ -90,11 +91,13 @@ export interface FunctionExecutionContext {
 export class FunctionRegistryManager {
   private db: Database.Database;
   private logger: PersonaLogger;
+  private dbInitializer: DatabaseInitializer;
   private functionDefinitions: Map<string, FunctionDefinition> = new Map();
   private personaBindings: Map<string, PersonaFunctionBinding[]> = new Map();
 
   constructor(database: Database.Database) {
     this.db = database;
+    this.dbInitializer = new DatabaseInitializer(this.db);
     this.logger = PersonaLogger.getInstance();
     
     this.initializeDatabase();
@@ -111,7 +114,15 @@ export class FunctionRegistryManager {
    * データベーステーブルの初期化
    */
   private initializeDatabase(): void {
-    const methodName = 'initializeDatabase';
+    // Use centralized DatabaseInitializer for consistent schema management
+    this.dbInitializer.initializeAll();
+    
+    // Function Registry specific tables
+    this.initializeFunctionTables();
+  }
+
+  private initializeFunctionTables(): void {
+    const methodName = 'initializeFunctionTables';
     
     try {
       // Function定義テーブル

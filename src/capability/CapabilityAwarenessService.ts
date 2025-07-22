@@ -9,6 +9,7 @@
 
 import Database from 'better-sqlite3';
 import { z } from 'zod';
+import { DatabaseInitializer } from '../database/DatabaseInitializer';
 
 // 能力情報のスキーマ定義
 const CapabilitySchema = z.object({
@@ -56,61 +57,18 @@ export type OtherAwarenessInfo = z.infer<typeof OtherAwarenessInfoSchema>;
 export class CapabilityAwarenessService {
   private db: Database.Database;
   private queries: any = {};
+  private dbInitializer: DatabaseInitializer;
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);
+    this.dbInitializer = new DatabaseInitializer(this.db);
     this.initializeTables();
     this.initializeQueries();
   }
 
   private initializeTables() {
-    // Initialize database tables using existing schema patterns
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS contexts (
-        context_id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS persona_capabilities (
-        context_id TEXT PRIMARY KEY,
-        expertise TEXT NOT NULL DEFAULT '[]',
-        tools TEXT NOT NULL DEFAULT '[]', 
-        restrictions TEXT NOT NULL DEFAULT '[]',
-        performance_metrics TEXT,
-        learning_capabilities TEXT,
-        is_public BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (context_id) REFERENCES contexts(context_id) ON DELETE CASCADE
-      )
-    `);
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS persona_hierarchy (
-        ancestor_id TEXT NOT NULL,
-        descendant_id TEXT NOT NULL,
-        depth INTEGER NOT NULL,
-        is_direct BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (ancestor_id, descendant_id),
-        FOREIGN KEY (ancestor_id) REFERENCES contexts(context_id) ON DELETE CASCADE,
-        FOREIGN KEY (descendant_id) REFERENCES contexts(context_id) ON DELETE CASCADE
-      )
-    `);
-
-    // Create indexes for performance optimization
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_persona_capabilities_context ON persona_capabilities(context_id);
-      CREATE INDEX IF NOT EXISTS idx_persona_capabilities_public ON persona_capabilities(is_public) WHERE is_public = 1;
-      CREATE INDEX IF NOT EXISTS idx_persona_hierarchy_ancestor ON persona_hierarchy(ancestor_id);
-      CREATE INDEX IF NOT EXISTS idx_persona_hierarchy_descendant ON persona_hierarchy(descendant_id);
-      CREATE INDEX IF NOT EXISTS idx_persona_hierarchy_depth ON persona_hierarchy(depth);
-    `);
+    // Use centralized DatabaseInitializer for consistent schema management
+    this.dbInitializer.initializeAll();
   }
 
   private initializeQueries() {
