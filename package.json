@@ -1,6 +1,6 @@
 {
   "name": "@mako10k/mcp-llm-generator",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and shared memory collaboration. Features OpenAI standard function calling, 67% token reduction optimization, personality-driven consultants, associative memory, and experimental Step3 capability awareness system for enhanced AI workflows.",
   "type": "module",
   "main": "build/index.js",
@@ -92,14 +92,14 @@
     "better-sqlite3": "^12.2.0",
     "js-yaml": "^4.1.0",
     "tiktoken": "^1.0.21",
-    "zod": "^3.22.4"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-typescript": "^7.27.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.0.15",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vitest/coverage-v8": "^2.0.0",
