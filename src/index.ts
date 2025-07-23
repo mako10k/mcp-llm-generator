@@ -5,26 +5,23 @@
  * This server demonstrates:
  * - Basic MCP server setup using TypeScript SDK
  * - Implementation of a 'sample' tool that uses LLM sampling
- * - Resource// Template execution tool implementation
-server.registerTool(
-  "template-execute",
-  {
-    title: "Template Execution",
-    description: "Execute a predefined template with parameter substitution via LLM text generation",
-    inputSchema: {
-      templateName: z.string().describe("Name of the template to execute"),
-      args: z.record(z.string()).describe("Arguments for template parameter substitution"),
-      maxTokens: z.number().optional().default(500).describe("Maximum tokens to generate"),
-      temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
-      includeContext: z.enum(["none", "thisServer", "allServers"]).optional().default("none").describe("Context inclusion level")
-    }sample configurations
+ * - Resource configurations
  * - Prompt templates for sample operations
+ * - External LLM API integration (OpenAI, Claude)
  */
 
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+
 import { ContextMemoryIntegration } from "./contextMemory/index.js";
+import { LLMProviderManager } from "./llm/index.js";
+import { registerSharedMemoryTools } from "./tools/shared-memory-integration-v2.js";
+import { SharedMemoryToolsManager } from "./tools/shared-memory-tools.js";
+import { CapabilityAwarenessMCPTools } from "./capability/CapabilityAwarenessMCPTools.js";
+import { toMCPSDKMessages } from './contextMemory/types.js';
+import Database from 'better-sqlite3';
 
 // Template structure definition
 type SampleTemplate = {
@@ -119,6 +116,17 @@ const server = new McpServer({
 
 // Initialize Context Memory System
 const contextMemory = new ContextMemoryIntegration();
+
+// Initialize LLM Provider Manager
+const llmManager = new LLMProviderManager({
+  defaultProvider: 'mcp-internal' // MCPサンプリングをデフォルトに保持
+});
+
+// Initialize Capability Awareness System
+let capabilityAwareness: CapabilityAwarenessMCPTools | null = null;
+
+// Global variable for shared memory manager
+let sharedMemoryManager: SharedMemoryToolsManager | null = null;
 
 // Sample configurations resource
 server.registerResource(
@@ -252,7 +260,7 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async ({ templateName, args, maxTokens, temperature, includeContext }, extra) => {
+  async ({ templateName, args, maxTokens, temperature, includeContext }, _extra) => {
     try {
       // Expand the template
       const { systemPrompt, userMessage, template } = await expandTemplate(templateName, args);
@@ -455,7 +463,7 @@ const TEMPLATES_DIR = './templates';
 const TEMPLATES_FILE = join(TEMPLATES_DIR, 'templates.json');
 
 // Template file initialization
-async function initializeTemplatesFile() {
+async function initializeTemplatesFile(): Promise<void> {
   try {
     await fs.mkdir(TEMPLATES_DIR, { recursive: true });
     
@@ -514,7 +522,7 @@ server.registerTool(
   },
   async ({ action, name, template }) => {
     try {
-      let templates = await loadTemplatesFromFile();
+      const templates = await loadTemplatesFromFile();
 
       switch (action) {
         case "list":
@@ -555,7 +563,7 @@ server.registerTool(
             }]
           };
 
-        case "update":
+        case "update": {
           if (!name || !template) {
             throw new Error("Template name and data are required for update action");
           }
@@ -578,8 +586,9 @@ server.registerTool(
               }, null, 2)
             }]
           };
+        }
 
-        case "delete":
+        case "delete": {
           if (!name) {
             throw new Error("Template name is required for delete action");
           }
@@ -602,6 +611,7 @@ server.registerTool(
               }, null, 2)
             }]
           };
+        }
 
         default:
           throw new Error(`Unknown action: ${action}`);
@@ -717,6 +727,147 @@ server.registerTool(
   }
 );
 
+// External LLM API integration tools
+server.registerTool(
+  "external-llm-generate",
+  {
+    title: "External LLM Generation",
+    description: "Generate text using external LLM APIs (OpenAI, Claude, etc.)",
+    inputSchema: {
+      messages: z.array(z.object({
+        role: z.enum(["system", "user", "assistant"]).describe("Message role"),
+        content: z.string().describe("Message content")
+      })).describe("Array of messages for the conversation"),
+      provider: z.string().optional().describe("LLM provider to use (openai, claude)"),
+      model: z.string().optional().describe("Specific model to use"),
+      maxTokens: z.number().optional().default(1000).describe("Maximum tokens to generate"),
+      temperature: z.number().optional().default(0.7).describe("Sampling temperature (0.0 to 1.0)"),
+      topP: z.number().optional().describe("Top-p sampling parameter"),
+      stop: z.array(z.string()).optional().describe("Stop sequences"),
+      stream: z.boolean().optional().default(false).describe("Enable streaming response")
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false
+    }
+  },
+  async ({ messages, provider, model, maxTokens, temperature, topP, stop, stream }) => {
+    try {
+      if (stream) {
+        // ストリーミングは現在のMCPプロトコルでは未対応
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: "Streaming is not supported in current MCP protocol implementation",
+              provider: provider || 'not specified',
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+      }
+
+      const response = await llmManager.generateMessage(messages, {
+        provider,
+        model,
+        maxTokens,
+        temperature,
+        topP,
+        stop
+      });
+
+      // 使用統計の更新
+      if (provider) {
+        llmManager.trackUsage(provider);
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            provider: provider || 'mcp-internal',
+            model: response.model,
+            content: response.content,
+            usage: response.usage,
+            stopReason: response.stopReason,
+            metadata: {
+              ...response.metadata,
+              timestamp: new Date().toISOString(),
+              external_api: !!provider
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: error instanceof Error ? error.message : "Unknown error",
+            provider: provider || 'not specified',
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
+server.registerTool(
+  "external-llm-providers",
+  {
+    title: "External LLM Providers Info",
+    description: "Get information about available LLM providers and their capabilities",
+    inputSchema: {
+      healthCheck: z.boolean().optional().default(false).describe("Include health check results")
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    }
+  },
+  async ({ healthCheck }) => {
+    try {
+      const providers = llmManager.getProviderInfo();
+      const usageStats = llmManager.getUsageStats();
+      let healthResults: Record<string, boolean> = {};
+
+      if (healthCheck) {
+        healthResults = await llmManager.healthCheckAll();
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            availableProviders: llmManager.getAvailableProviders(),
+            providers: providers.map(provider => ({
+              ...provider,
+              healthy: healthCheck ? healthResults[provider.name] : undefined,
+              usageCount: usageStats[provider.name] || 0
+            })),
+            healthCheck: healthCheck ? healthResults : undefined,
+            usageStats,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            error: true,
+            message: error instanceof Error ? error.message : "Unknown error",
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    }
+  }
+);
+
 // Context Memory Tools Registration
 server.registerTool(
   "context-manage",
@@ -744,8 +895,14 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "context-manage", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "context-manage",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from context-manage tool' }] };
   }
@@ -774,8 +931,14 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "personality-preset-manage", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "personality-preset-manage",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from personality-preset-manage tool' }] };
   }
@@ -796,8 +959,14 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "context-chat", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "context-chat",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from context-chat tool' }] };
   }
@@ -822,22 +991,174 @@ server.registerTool(
       openWorldHint: false
     }
   },
-  async (args, extra) => {
-    const request = { params: { name: "conversation-manage", arguments: args } } as any;
+  async (args, _extra) => {
+    const request: CallToolRequest = {
+      method: "tools/call",
+      params: {
+        name: "conversation-manage",
+        arguments: args
+      }
+    };
     const result = await contextMemory.handleToolCall(request);
     return result || { content: [{ type: 'text', text: 'No response from conversation-manage tool' }] };
   }
 );
 
+// Step3: Capability Awareness Tools Registration Helper
+async function registerCapabilityAwarenessTools(server: McpServer, capabilityTools: CapabilityAwarenessMCPTools): Promise<void> {
+  // Self-awareness capability tool
+  server.registerTool(
+    "persona-inspect-capabilities",
+    {
+      title: "Persona Inspect Capabilities",
+      description: "Enable specified persona to recognize own capabilities, constraints, and responsibilities (self-awareness)",
+      inputSchema: {
+        context_id: z.string().describe("Context ID of the persona to get capability self-awareness information")
+      }
+    },
+    async (args: { context_id: string }) => {
+      const result = await capabilityTools.handleToolCall("persona-inspect-capabilities", args);
+      // MCP SDK CallToolResult形式に変換
+      return {
+        content: result.content,
+        isError: result.isError
+      };
+    }
+  );
+
+  // Other-awareness capability tool
+  server.registerTool(
+    "persona-evaluate-interaction",
+    {
+      title: "Persona Evaluate Interaction",
+      description: "Enable observer persona to observe and evaluate other personas capabilities (other-awareness)",
+      inputSchema: {
+        observer_context_id: z.string().describe("Observer persona context ID"),
+        target_context_id: z.string().describe("Target persona context ID to observe")
+      }
+    },
+    async (args: { observer_context_id: string; target_context_id: string }) => {
+      const result = await capabilityTools.handleToolCall("persona-evaluate-interaction", args);
+      // Convert to MCP SDK CallToolResult format
+      return {
+        content: result.content,
+        isError: result.isError
+      };
+    }
+  );
+
+  // Inheritance capability tool
+  server.registerTool(
+    "persona-transfer-knowledge",
+    {
+      title: "Persona Transfer Knowledge", 
+      description: "Process capability inheritance from parent to child (inheritance function)",
+      inputSchema: {
+        parent_context_id: z.string().describe("Parent persona context ID"),
+        child_context_id: z.string().describe("Child persona context ID")
+      }
+    },
+    async (args: { parent_context_id: string; child_context_id: string }) => {
+      const result = await capabilityTools.handleToolCall("persona-transfer-knowledge", args);
+      // Convert to MCP SDK CallToolResult format
+      return {
+        content: result.content,
+        isError: result.isError
+      };
+    }
+  );
+
+  // Capability matrix tool
+  server.registerTool(
+    "group-get-capability-overview",
+    {
+      title: "Group Get Capability Overview",
+      description: "Display capability matrix and inheritance relationships for multiple personas",
+      inputSchema: {
+        context_ids: z.array(z.string()).optional().describe("List of target personas (all personas if omitted)"),
+        include_inheritance: z.boolean().default(true).describe("Whether to include inheritance relationship information")
+      }
+    },
+    async (args: { context_ids?: string[]; include_inheritance?: boolean }) => {
+      const result = await capabilityTools.handleToolCall("group-get-capability-overview", args);
+      // Convert to MCP SDK CallToolResult format
+      return {
+        content: result.content,
+        isError: result.isError
+      };
+    }
+  );
+
+  // Hierarchy analysis tool
+  server.registerTool(
+    "network-analyze-structure",
+    {
+      title: "Network Analyze Structure",
+      description: "Analyze capability distribution and optimization suggestions for entire persona hierarchy",
+      inputSchema: {
+        root_context_id: z.string().optional().describe("Root persona ID to start analysis (all hierarchy if omitted)")
+      }
+    },
+    async (args: { root_context_id?: string }) => {
+      const result = await capabilityTools.handleToolCall("network-analyze-structure", args);
+      // Convert to MCP SDK CallToolResult format
+      return {
+        content: result.content,
+        isError: result.isError
+      };
+    }
+  );
+}
+
 // Server startup
-async function main() {
+async function main(): Promise<void> {
   try {
     // Initialize templates file
     await initializeTemplatesFile();
     
+    // Shared Memory Tools Registration
+    try {
+      const sharedMemoryDb = new Database('data/shared-memory.db');
+      sharedMemoryManager = registerSharedMemoryTools(server, sharedMemoryDb);
+      console.log('✅ Shared memory tools registered (6 tools)');
+    } catch (error) {
+      console.error('❌ Failed to register shared memory tools:', error);
+    }
+    
+    // Step3: Capability Awareness Tools Registration
+    try {
+      capabilityAwareness = new CapabilityAwarenessMCPTools('data/contexts.db');
+      await registerCapabilityAwarenessTools(server, capabilityAwareness);
+      console.log('✅ Capability awareness tools registered (5 tools)');
+    } catch (error) {
+      console.error('❌ Failed to register capability awareness tools:', error);
+    }
+    
     // Initialize Context Memory System with LLM sampling capability
-    await contextMemory.initialize(server as any, async (messages, options) => {
-      return await server.server.createMessage({ messages, ...options });
+    await contextMemory.initialize(server.server, async (messages, options, systemPrompt) => {
+      // Convert MCPMessage to MCP SDK format using type-safe conversion
+      const sdkMessages = toMCPSDKMessages(messages);
+      
+      // toMCPSDKMessages already filters out system messages
+      const convertedMessages = sdkMessages.map(msg => ({
+        role: msg.role, // Type-safe: guaranteed to be 'user' | 'assistant'
+        content: {
+          type: 'text' as const,
+          text: msg.content
+        }
+      }));
+      
+      // Convert options to MCP SDK format with proper typing
+      const createMessageParams: Parameters<typeof server.server.createMessage>[0] = {
+        messages: convertedMessages,
+        maxTokens: 500, // Default value to satisfy required field
+        ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
+        ...(options?.temperature !== undefined && { temperature: options.temperature }),
+        ...(options?.stopSequences !== undefined && { stopSequences: options.stopSequences }),
+        ...(systemPrompt !== undefined && { systemPrompt })
+      };
+      
+      return await server.server.createMessage(createMessageParams);
     });
     
     const transport = new StdioServerTransport();
@@ -853,12 +1174,18 @@ async function main() {
 process.on('SIGINT', () => {
   console.error("Shutting down MCP Sampler Server...");
   contextMemory.close();
+  if (sharedMemoryManager) {
+    sharedMemoryManager.close();
+  }
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.error("Shutting down MCP Sampler Server...");
   contextMemory.close();
+  if (sharedMemoryManager) {
+    sharedMemoryManager.close();
+  }
   process.exit(0);
 });
 

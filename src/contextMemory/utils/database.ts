@@ -8,7 +8,15 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { Context, Conversation, PersonalityPreset, DEFAULT_PERSONALITY_PRESETS } from '../types/index.js';
-import { paginate, filterContexts, filterPresets } from '../utils/index.js';
+import { 
+  ContextRow, 
+  ConversationRow, 
+  PersonalityPresetRow,
+  ContextStatsRow,
+  ConversationStatsRow,
+  PresetStatsRow,
+  CountRow
+} from '../types/database-types.js';
 
 // =============================================================================
 // Database Connection and Schema
@@ -30,6 +38,13 @@ export class ContextMemoryDatabase {
 
     this.initializeSchema();
     this.seedDefaultPresets();
+  }
+
+  /**
+   * Get the underlying database instance for integration with other components
+   */
+  getDatabase(): Database.Database {
+    return this.db;
   }
 
   /**
@@ -115,7 +130,7 @@ export class ContextMemoryDatabase {
 
     const now = new Date().toISOString();
 
-    for (const [key, preset] of Object.entries(DEFAULT_PERSONALITY_PRESETS)) {
+    for (const preset of Object.values(DEFAULT_PERSONALITY_PRESETS)) {
       insertPreset.run(
         preset.id,
         preset.name,
@@ -182,7 +197,7 @@ export class ContextMemoryDatabase {
       SELECT * FROM contexts WHERE id = ?
     `);
 
-    const row = stmt.get(id) as any;
+    const row = stmt.get(id) as ContextRow | undefined;
     if (!row) return null;
 
     return this.rowToContext(row);
@@ -252,7 +267,7 @@ export class ContextMemoryDatabase {
 
     // Build WHERE clause based on filters
     const whereClauses: string[] = [];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (!options.includeExpired) {
       whereClauses.push('datetime(expires_at) > datetime(\'now\')');
@@ -270,28 +285,19 @@ export class ContextMemoryDatabase {
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    // Get total count
-    const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM contexts ${whereClause}`);
-    const { count: totalCount } = countStmt.get(...params) as { count: number };
-
-    // Get paginated results
-    const offset = (page - 1) * pageSize;
-    const listStmt = this.db.prepare(`
-      SELECT * FROM contexts ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    const rows = listStmt.all(...params, pageSize, offset) as any[];
-    const contexts = rows.map(row => this.rowToContext(row));
+    const result = this.buildFilteredQuery<ContextRow>(
+      'contexts',
+      { whereClause, params },
+      { page, pageSize }
+    );
 
     return {
-      contexts,
-      totalCount,
-      page,
-      pageSize,
-      hasNext: offset + pageSize < totalCount,
-      hasPrev: page > 1
+      contexts: result.rows.map(row => this.rowToContext(row)),
+      totalCount: result.totalCount,
+      page: result.page,
+      pageSize: result.pageSize,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev
     };
   }
 
@@ -303,62 +309,55 @@ export class ContextMemoryDatabase {
    * Create a new conversation message
    */
   createConversation(conversation: Conversation): Conversation {
-    const stmt = this.db.prepare(`
+    const query = `
       INSERT INTO conversations (id, context_id, role, content, token_count, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
+    `;
+    this.executeNonQuery(query, [
       conversation.id,
       conversation.contextId,
       conversation.role,
       conversation.content,
       conversation.tokenCount,
       conversation.createdAt
-    );
-
+    ]);
     return conversation;
   }
 
   /**
    * Get conversations for a context
    */
-  getConversations(contextId: string, options: {
+  async getConversations(contextId: string, options: {
     page?: number;
     pageSize?: number;
     reverse?: boolean;
-  } = {}): {
+  } = {}): Promise<{
     conversations: Conversation[];
     totalCount: number;
     page: number;
     pageSize: number;
     hasNext: boolean;
     hasPrev: boolean;
-  } {
+  }> {
     const page = options.page || 1;
     const pageSize = options.pageSize || 20;
     const orderBy = options.reverse !== false ? 'DESC' : 'ASC';
 
-    // Get total count
-    const countStmt = this.db.prepare(`
-      SELECT COUNT(*) as count FROM conversations WHERE context_id = ?
-    `);
-    const { count: totalCount } = countStmt.get(contextId) as { count: number };
+    const countQuery = `SELECT COUNT(*) as count FROM conversations WHERE context_id = ?`;
+    const countResult = await this.executeQuery<CountRow>(countQuery, [contextId]);
+    const totalCount = countResult[0]?.count || 0;
 
-    // Get paginated results
     const offset = (page - 1) * pageSize;
-    const listStmt = this.db.prepare(`
+    const listQuery = `
       SELECT * FROM conversations 
       WHERE context_id = ?
       ORDER BY created_at ${orderBy}
       LIMIT ? OFFSET ?
-    `);
-
-    const rows = listStmt.all(contextId, pageSize, offset) as any[];
-    const conversations = rows.map(row => this.rowToConversation(row));
+    `;
+    const rows = await this.executeQuery<ConversationRow>(listQuery, [contextId, pageSize, offset]);
 
     return {
-      conversations,
+      conversations: rows.map((row: ConversationRow) => this.rowToConversation(row)),
       totalCount,
       page,
       pageSize,
@@ -377,7 +376,7 @@ export class ContextMemoryDatabase {
       ORDER BY created_at ASC
     `);
 
-    const rows = stmt.all(contextId) as any[];
+    const rows = stmt.all(contextId) as ConversationRow[];
     return rows.map(row => this.rowToConversation(row));
   }
 
@@ -457,7 +456,7 @@ export class ContextMemoryDatabase {
       SELECT * FROM personality_presets WHERE id = ?
     `);
 
-    const row = stmt.get(id) as any;
+    const row = stmt.get(id) as PersonalityPresetRow | undefined;
     if (!row) return null;
 
     return this.rowToPersonalityPreset(row);
@@ -527,7 +526,7 @@ export class ContextMemoryDatabase {
 
     // Build WHERE clause based on filters
     const whereClauses: string[] = [];
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (!options.includeInactive) {
       whereClauses.push('is_active = 1');
@@ -540,28 +539,19 @@ export class ContextMemoryDatabase {
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    // Get total count
-    const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM personality_presets ${whereClause}`);
-    const { count: totalCount } = countStmt.get(...params) as { count: number };
-
-    // Get paginated results
-    const offset = (page - 1) * pageSize;
-    const listStmt = this.db.prepare(`
-      SELECT * FROM personality_presets ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `);
-
-    const rows = listStmt.all(...params, pageSize, offset) as any[];
-    const presets = rows.map(row => this.rowToPersonalityPreset(row));
+    const result = this.buildFilteredQuery<PersonalityPresetRow>(
+      'personality_presets',
+      { whereClause, params },
+      { page, pageSize }
+    );
 
     return {
-      presets,
-      totalCount,
-      page,
-      pageSize,
-      hasNext: offset + pageSize < totalCount,
-      hasPrev: page > 1
+      presets: result.rows.map(row => this.rowToPersonalityPreset(row)),
+      totalCount: result.totalCount,
+      page: result.page,
+      pageSize: result.pageSize,
+      hasNext: result.hasNext,
+      hasPrev: result.hasPrev
     };
   }
 
@@ -609,14 +599,14 @@ export class ContextMemoryDatabase {
         SUM(CASE WHEN datetime(expires_at) <= datetime('now') THEN 1 ELSE 0 END) as expired
       FROM contexts
     `);
-    const contextStats = contextStatsStmt.get() as any;
+    const contextStats = contextStatsStmt.get() as ContextStatsRow;
     stats.totalContexts = contextStats.total;
     stats.activeContexts = contextStats.active;
     stats.expiredContexts = contextStats.expired;
 
     // Conversation statistics
     const conversationStatsStmt = this.db.prepare(`SELECT COUNT(*) as total FROM conversations`);
-    const conversationStats = conversationStatsStmt.get() as any;
+    const conversationStats = conversationStatsStmt.get() as ConversationStatsRow;
     stats.totalConversations = conversationStats.total;
 
     // Preset statistics
@@ -626,7 +616,7 @@ export class ContextMemoryDatabase {
         SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active
       FROM personality_presets
     `);
-    const presetStats = presetStatsStmt.get() as any;
+    const presetStats = presetStatsStmt.get() as PresetStatsRow;
     stats.totalPresets = presetStats.total;
     stats.activePresets = presetStats.active;
 
@@ -638,9 +628,58 @@ export class ContextMemoryDatabase {
   // =============================================================================
 
   /**
+   * Build filtered query with pagination
+   */
+  private buildFilteredQuery<T>(
+    baseTable: string,
+    filters: {
+      whereClause: string;
+      params: (string | number)[];
+    },
+    pagination: {
+      page: number;
+      pageSize: number;
+      orderBy?: string;
+    }
+  ): {
+    totalCount: number;
+    rows: T[];
+    page: number;
+    pageSize: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  } {
+    const { whereClause, params } = filters;
+    const { page, pageSize, orderBy = 'created_at DESC' } = pagination;
+
+    // Get total count
+    const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM ${baseTable} ${whereClause}`);
+    const { count: totalCount } = countStmt.get(...params) as CountRow;
+
+    // Get paginated results
+    const offset = (page - 1) * pageSize;
+    const listStmt = this.db.prepare(`
+      SELECT * FROM ${baseTable} ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT ? OFFSET ?
+    `);
+
+    const rows = listStmt.all(...params, pageSize, offset) as T[];
+
+    return {
+      totalCount,
+      rows,
+      page,
+      pageSize,
+      hasNext: offset + pageSize < totalCount,
+      hasPrev: page > 1
+    };
+  }
+
+  /**
    * Convert database row to Context object
    */
-  private rowToContext(row: any): Context {
+  private rowToContext(row: ContextRow): Context {
     return {
       id: row.id,
       name: row.name,
@@ -660,7 +699,7 @@ export class ContextMemoryDatabase {
   /**
    * Convert database row to Conversation object
    */
-  private rowToConversation(row: any): Conversation {
+  private rowToConversation(row: ConversationRow): Conversation {
     return {
       id: row.id,
       contextId: row.context_id,
@@ -674,7 +713,7 @@ export class ContextMemoryDatabase {
   /**
    * Convert database row to PersonalityPreset object
    */
-  private rowToPersonalityPreset(row: any): PersonalityPreset {
+  private rowToPersonalityPreset(row: PersonalityPresetRow): PersonalityPreset {
     return {
       id: row.id,
       name: row.name,
@@ -692,5 +731,32 @@ export class ContextMemoryDatabase {
       isActive: row.is_active === 1,
       metadata: JSON.parse(row.metadata || '{}')
     };
+  }
+
+  /**
+   * Execute a query and return the result
+   */
+  async executeQuery<T>(query: string, params: unknown[]): Promise<T[]> {
+    try {
+      const stmt = this.db.prepare(query);
+      const rows = stmt.all(...params) as T[];
+      return rows;
+    } catch (error) {
+      console.error('Database query execution failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute a non-SELECT query (INSERT, UPDATE, DELETE)
+   */
+  executeNonQuery(query: string, params: unknown[]): Database.RunResult {
+    try {
+      const stmt = this.db.prepare(query);
+      return stmt.run(...params);
+    } catch (error) {
+      console.error('Database non-query execution failed:', error);
+      throw error;
+    }
   }
 }

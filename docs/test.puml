@@ -1,0 +1,12 @@
+@startuml test
+
+actor User
+participant "VS Code" as vscode
+participant "MCP Server" as server
+
+User -> vscode : function call
+vscode -> server : JSON-RPC
+server -> vscode : response
+vscode -> User : result
+
+@enduml

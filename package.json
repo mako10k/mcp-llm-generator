@@ -1,7 +1,7 @@
 {
   "name": "@mako10k/mcp-llm-generator",
-  "version": "1.0.1",
-  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and intelligent template systems. Features 67% token reduction optimization, personality-driven consultants, and associative memory for enhanced AI workflows.",
+  "version": "1.4.0",
+  "description": "🚀 Production-ready MCP server with advanced LLM text generation, context memory, and shared memory collaboration. Features OpenAI standard function calling, 67% token reduction optimization, personality-driven consultants, associative memory, and experimental Step3 capability awareness system for enhanced AI workflows.",
   "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -10,6 +10,7 @@
   },
   "files": [
     "build/",
+    "build-production/",
     "templates/templates.json.sample",
     "README.md",
     "LICENSE"
@@ -20,11 +21,35 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:dev": "tsc --outDir build-dev",
+    "build:production": "tsc --outDir build-production",
+    "deploy": "./scripts/deploy-production.sh",
+    "deploy:test": "./scripts/deploy-production.sh && npm run status",
+    "status": "ps aux | grep 'build-production/index.js' | grep -v grep || echo 'No processes running (will start on-demand)'",
     "start": "node build/index.js",
+    "start:dev": "node build-dev/index.js",
+    "start:production": "node build-production/index.js",
     "dev": "tsx src/index.ts",
     "prepare": "husky",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "check:copilot-instructions": "node -e \"const fs = require('fs'); const path = '.github/copilot-instructions.md'; if (!fs.existsSync(path)) { console.error('❌ copilot-instructions.md が見つかりません'); process.exit(1); } const content = fs.readFileSync(path, 'utf8'); if (!content.includes('# Copilot Instructions')) { console.error('❌ 正しいフォーマットではありません'); process.exit(1); } console.log('✅ copilot-instructions.md は正常です');\""
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "lint:strict": "eslint src --ext .ts --max-warnings 0",
+    "quality:check": "npm run lint:strict && npm run type-check && npm run test",
+    "quality:duplicates": "npx jscpd src/ --min-lines 5 --min-tokens 50 --reporters console",
+    "quality:unused": "npx ts-prune --project tsconfig.json",
+    "prebuild": "npm run type-check",
+    "type-check": "tsc --noEmit",
+    "check:copilot-instructions": "node -e \"const fs = require('fs'); const path = '.github/copilot-instructions.md'; if (!fs.existsSync(path)) { console.error('❌ copilot-instructions.md が見つかりません'); process.exit(1); } const content = fs.readFileSync(path, 'utf8'); if (!content.includes('# Copilot Instructions')) { console.error('❌ 正しいフォーマットではありません'); process.exit(1); } console.log('✅ copilot-instructions.md は正常です');\"",
+    "rgf-check": "npx tsc --project tools/tsconfig.json && if [ -f build/tools/rgf-checker.js ]; then mv build/tools/rgf-checker.js build/tools/rgf-checker.cjs; fi && node build/tools/rgf-checker.cjs check .",
+    "production:check": "node tools/production-guard.js",
+    "production:update": "echo '🔐 Production Update Process' && echo 'This operation requires explicit user approval.' && echo 'Building for production environment...' && npm run build:production && echo '✅ Production environment updated'",
+    "deploy": "./scripts/deploy-production.sh",
+    "deploy:restart": "pkill -f 'build-production/index.js' || echo 'No existing processes found' && echo '🔄 MCP Server restarted successfully' && echo '⚠️  New process will be automatically started by VS Code MCP Client'",
+    "deploy:force": "pkill -9 -f 'build-production/index.js' || echo 'No existing processes found' && npm run build:production && echo '🔄 Force deployment completed'",
+    "precommit": "npm run production:check"
   },
   "keywords": [
     "mcp",
@@ -60,15 +85,35 @@
     "url": "https://github.com/sponsors/mako10k"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.57.0",
     "@modelcontextprotocol/sdk": "^1.2.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/js-yaml": "^4.0.9",
     "better-sqlite3": "^12.2.0",
+    "js-yaml": "^4.1.0",
+    "tiktoken": "^1.0.21",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-typescript": "^7.27.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "babel-jest": "^30.0.4",
+    "depcheck": "^1.4.7",
+    "eslint": "^8.0.0",
     "husky": "^9.1.7",
+    "jest": "^30.0.4",
+    "jscpd": "^4.0.5",
+    "madge": "^8.0.0",
+    "ts-jest": "^29.4.0",
+    "ts-prune": "^0.10.3",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^2.0.0"
   }
 }

@@ -1,0 +1,7 @@
+{
+  "exclude": [],
+  "ignore": [
+    "// jscpd:ignore-start",
+    "// jscpd:ignore-end"
+  ]
+}

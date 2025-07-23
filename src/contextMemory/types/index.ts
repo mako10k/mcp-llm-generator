@@ -48,7 +48,7 @@ export interface PersonalityPreset {
   createdAt: string;            // ISO timestamp
   updatedAt: string;            // ISO timestamp
   isActive: boolean;            // Active status
-  metadata?: Record<string, any>; // Additional metadata
+  metadata?: Record<string, unknown>; // Additional metadata
 }
 
 // =============================================================================
@@ -194,7 +194,7 @@ export interface PersonalityPresetManageInput {
     maxHistoryTokens?: number; // Default: 15000 (16K context - 1K overhead)
     expiryDays?: number;       // Default: 7
   };
-  metadata?: Record<string, any>; // Additional metadata
+  metadata?: Record<string, unknown>; // Additional metadata
   
   // For list operation
   page?: number;               // Default: 1
