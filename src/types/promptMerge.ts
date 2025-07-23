@@ -1,6 +1,8 @@
 // Step4マージ機能 - TypeScript型定義
 // 作成日: 2025年7月22日
 
+import { Tool } from './tool.js'; // Tool型をインポート
+
 /**
  * マージ処理の設定
  */
@@ -116,6 +118,7 @@ export interface MergeInputParams {
   contextId: string;
   userSystemPrompt: string;
   taskContext?: string;
+  availableTools?: Tool[]; // ツール定義を追加
   compressionConfig?: CompressionConfig;
   forceOverride?: boolean; // 矛盾があっても強制実行
 }

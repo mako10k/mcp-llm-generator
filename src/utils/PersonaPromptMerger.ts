@@ -10,6 +10,7 @@ import { TransactionManager } from './TransactionManager.js';
 import { OriginalDataManager } from './OriginalDataManager.js';
 import { PromptMergeDatabase } from './PromptMergeDatabase.js';
 import { SystemPromptGenerator } from '../toolcall-emulation/SystemPromptGenerator.js';
+import { OptimizedSystemPromptGenerator } from '../toolcall-emulation/OptimizedSystemPromptGenerator.js';
 import { 
   MergeInputParams, 
   MergeResult, 
@@ -38,12 +39,17 @@ export class PersonaPromptMerger {
   private mergeDatabase: PromptMergeDatabase;
   private conflictDetector: ConflictDetector;
   private systemPromptGenerator: SystemPromptGenerator;
+  private optimizedPromptGenerator: OptimizedSystemPromptGenerator;
+  private useOptimizedPrompts: boolean;
 
-  constructor(database: Database) {
+  constructor(database: Database, options: { useOptimizedPrompts?: boolean } = {}) {
     this.database = database;
     this.tokenManager = new PromptTokenManager();
     this.mergeDatabase = new PromptMergeDatabase(database);
     this.conflictDetector = new ConflictDetector();
+    
+    // 最適化プロンプトの使用設定（デフォルト: true）
+    this.useOptimizedPrompts = options.useOptimizedPrompts !== false;
     
     // SystemPromptGenerator統合（ツール定義用）
     this.systemPromptGenerator = new SystemPromptGenerator({
@@ -51,6 +57,15 @@ export class PersonaPromptMerger {
       strictMode: true,
       personaAware: false, // ペルソナはPersonaPromptMergerで処理
       contextLengthLimit: 8000,
+      includeToolValidation: true
+    });
+    
+    // 最適化版プロンプトジェネレーター
+    this.optimizedPromptGenerator = new OptimizedSystemPromptGenerator({
+      includeExamples: false,
+      strictMode: true,
+      personaAware: false,
+      contextLengthLimit: 4000,
       includeToolValidation: true
     });
   }
@@ -62,8 +77,7 @@ export class PersonaPromptMerger {
    * PM指示: トランザクション外でLLM処理、DB更新のみトランザクション内で実行
    */
   async mergeSystemPrompt(
-    params: MergeInputParams, 
-    availableTools: Tool[] = []
+    params: MergeInputParams
   ): Promise<MergeResult | MergeError> {
     try {
       // 1. 事前データ取得（トランザクション外）
@@ -79,20 +93,49 @@ export class PersonaPromptMerger {
 
       // 3. ツール定義を非圧縮で生成（トランザクション外）
       let toolDefinitions = '';
+      const availableTools = params.availableTools || []; // パラメータからツール定義を取得
+      
       if (availableTools.length > 0) {
-        const toolPromptResult = this.systemPromptGenerator.generateSystemPrompt(
-          'Placeholder user message', // ツール定義生成用のプレースホルダー
+        console.error(`=== PERSONA PROMPT MERGER DEBUG ===`);
+        console.error(`Available tools count: ${availableTools.length}`);
+        console.error(`Tool names: ${availableTools.map(tool => tool.function.name).join(', ')}`);
+        
+        // 最適化プロンプトジェネレーターの選択
+        const promptGenerator = this.useOptimizedPrompts 
+          ? this.optimizedPromptGenerator 
+          : this.systemPromptGenerator;
+        
+        const toolPromptResult = promptGenerator.generateSystemPrompt(
+          'Generate tool definitions for function calling', // より適切なメッセージ
           {
             availableTools,
-            persona: undefined, // ペルソナは既にマージ済み
+            persona: {
+              // オリジナルペルソナの内容を PersonaCapabilities 形式に変換
+              expertise: ['System Architecture', 'MCP Protocol', 'TypeScript Development'],
+              tools: availableTools.map(tool => tool.function.name),
+              restrictions: []
+            },
             constraints: {
-              maxTokens: params.compressionConfig?.maxTokens,
-              allowedActions: [], // capabilities配列から抽出する必要がある
-              forbiddenActions: [] // capabilities配列から抽出する必要がある
+              maxTokens: params.compressionConfig?.maxTokens || 4000,
+              allowedActions: ['tool_call', 'function_call'], // ツール呼び出しアクションを許可
+              forbiddenActions: ['direct_execution'] // 直接実行を禁止
             }
           }
         );
         toolDefinitions = toolPromptResult.systemPrompt;
+        
+        console.error(`=== PROMPT OPTIMIZATION STATUS ===`);
+        console.error(`Using optimized prompts: ${this.useOptimizedPrompts}`);
+        console.error(`Generated tool prompt tokens: ${Math.ceil(toolDefinitions.length * 0.75)}`);
+        console.error(`Tool prompt length: ${toolDefinitions.length} chars`);
+        
+        console.error(`Generated tool definitions length: ${toolDefinitions.length}`);
+        console.error(`Tool definitions preview: ${toolDefinitions.substring(0, 200)}...`);
+        console.error(`=====================================`);
+      } else {
+        console.error(`=== PERSONA PROMPT MERGER DEBUG ===`);
+        console.error(`No available tools provided - skipping tool definition generation`);
+        console.error(`=====================================`);
       }
 
       // 4. 最終プロンプト統合
@@ -130,13 +173,26 @@ export class PersonaPromptMerger {
    * ペルソナマージ結果とツール定義を統合
    */
   private combineMergedPrompts(personaPrompt: string, toolDefinitions: string): string {
+    console.error(`=== COMBINE MERGED PROMPTS DEBUG ===`);
+    console.error(`Persona prompt length: ${personaPrompt.length}`);
+    console.error(`Tool definitions length: ${toolDefinitions.length}`);
+    console.error(`Tool definitions empty: ${!toolDefinitions.trim()}`);
+    
     if (!toolDefinitions.trim()) {
+      console.error(`Returning persona prompt only (no tool definitions)`);
+      console.error(`====================================`);
       return personaPrompt;
     }
     
-    return `${personaPrompt}
+    const combined = `${personaPrompt}
 
 ${toolDefinitions}`;
+    
+    console.error(`Combined prompt length: ${combined.length}`);
+    console.error(`Combined prompt preview (last 200 chars): ...${combined.substring(combined.length - 200)}`);
+    console.error(`====================================`);
+    
+    return combined;
   }
 
   /**

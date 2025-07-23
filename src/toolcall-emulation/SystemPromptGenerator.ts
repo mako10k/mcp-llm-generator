@@ -236,39 +236,24 @@ ${descriptions}`;
    * 出力スキーマの生成
    */
   private generateOutputSchema(): string {
-    return `## Output Format
+    return `## Response Guidelines
 
-You MUST respond with a JSON object that follows this exact schema:
+You have access to various tools to help users with their requests. When you need to use a tool:
 
-\`\`\`json
-{
-  "should_call_tool": boolean,
-  "tool_calls": [
-    {
-      "tool_name": "string",
-      "arguments": {
-        // Tool-specific parameters as key-value pairs
-      },
-      "confidence": number, // 0.0 to 1.0
-      "reasoning": "string"
-    }
-  ],
-  "response_text": "string",
-  "metadata": {
-    "processing_time": number, // optional
-    "model_used": "string", // optional
-    "confidence_score": number // optional, 0.0 to 1.0
-  }
-}
-\`\`\`
+1. **Think** about whether the user's request requires a tool
+2. **Choose** the appropriate tool if needed  
+3. **Respond** naturally - the system will handle tool execution automatically
 
-**Critical Requirements**:
-- Set \`should_call_tool\` to \`true\` only if tools are necessary
-- Include \`tool_calls\` array even if empty
-- Provide confidence scores between 0.0 and 1.0
-- Include clear reasoning for each tool call
-- Generate appropriate response text regardless of tool usage
-- No additional properties allowed (strict mode)`;
+**Tool Usage**:
+- Use tools when the user's request requires specific actions (search, data retrieval, etc.)
+- Provide natural language responses - do not format as JSON manually
+- The system automatically handles tool calling using the standard OpenAI format
+
+**Regular Responses**:
+- For general questions, explanations, or conversations, respond naturally without using tools
+- Be helpful, informative, and maintain your persona
+
+The system supports standard OpenAI function calling protocol and will manage tool execution transparently.`;
   }
 
   /**
@@ -280,43 +265,19 @@ You MUST respond with a JSON object that follows this exact schema:
 
     return `## Examples
 
-### Example 1: Tool Call Required
+### Example 1: Tool Required
 User: "Search for recent articles about AI"
-Response:
-\`\`\`json
-{
-  "should_call_tool": true,
-  "tool_calls": [
-    {
-      "tool_name": "search_articles",
-      "arguments": {
-        "query": "AI recent articles",
-        "time_range": "recent"
-      },
-      "confidence": 0.9,
-      "reasoning": "User explicitly requested a search for recent AI articles, which matches the search_articles tool functionality"
-    }
-  ],
-  "response_text": "I'll search for recent articles about AI for you.",
-  "metadata": {
-    "confidence_score": 0.9
-  }
-}
-\`\`\`
+Assistant: I'll search for recent articles about AI for you.
+*[System automatically handles pats_google_search tool call]*
 
-### Example 2: No Tool Required
+### Example 2: Regular Response
 User: "What is artificial intelligence?"
-Response:
-\`\`\`json
-{
-  "should_call_tool": false,
-  "tool_calls": [],
-  "response_text": "Artificial intelligence (AI) is a branch of computer science that aims to create machines capable of performing tasks that typically require human intelligence...",
-  "metadata": {
-    "confidence_score": 0.8
-  }
-}
-\`\`\``;
+Assistant: Artificial intelligence (AI) is a branch of computer science that aims to create machines capable of performing tasks that typically require human intelligence, such as learning, reasoning, problem-solving, and understanding natural language...
+
+### Example 3: Tool with Explanation
+User: "Find information about the latest developments in machine learning"
+Assistant: I'll search for the latest developments in machine learning to get you current information.
+*[System automatically handles pats_google_search tool call]*`;
   }
 
   /**

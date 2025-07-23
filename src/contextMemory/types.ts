@@ -23,12 +23,29 @@ export interface MCPSDKMessage {
 }
 
 /**
+ * OpenAI standard tool definition
+ */
+export interface OpenAITool {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
+}
+
+/**
  * Sampling options for LLM generation
  */
 export interface SamplingOptions {
   maxTokens?: number;
   temperature?: number;
   stopSequences?: string[];
+  tools?: OpenAITool[]; // OpenAI standard tools parameter
 }
 
 /**
@@ -36,7 +53,8 @@ export interface SamplingOptions {
  */
 export type CreateMessageCallback = (
   messages: MCPMessage[], 
-  options?: SamplingOptions
+  options?: SamplingOptions,
+  systemPrompt?: string
 ) => Promise<unknown>;
 
 /**

@@ -23,6 +23,9 @@
     "build": "tsc",
     "build:dev": "tsc --outDir build-dev",
     "build:production": "tsc --outDir build-production",
+    "deploy": "./scripts/deploy-production.sh",
+    "deploy:test": "./scripts/deploy-production.sh && npm run status",
+    "status": "ps aux | grep 'build-production/index.js' | grep -v grep || echo 'No processes running (will start on-demand)'",
     "start": "node build/index.js",
     "start:dev": "node build-dev/index.js",
     "start:production": "node build-production/index.js",
@@ -43,6 +46,9 @@
     "rgf-check": "npx tsc --project tools/tsconfig.json && if [ -f build/tools/rgf-checker.js ]; then mv build/tools/rgf-checker.js build/tools/rgf-checker.cjs; fi && node build/tools/rgf-checker.cjs check .",
     "production:check": "node tools/production-guard.js",
     "production:update": "echo '🔐 Production Update Process' && echo 'This operation requires explicit user approval.' && echo 'Building for production environment...' && npm run build:production && echo '✅ Production environment updated'",
+    "deploy": "./scripts/deploy-production.sh",
+    "deploy:restart": "pkill -f 'build-production/index.js' || echo 'No existing processes found' && echo '🔄 MCP Server restarted successfully' && echo '⚠️  New process will be automatically started by VS Code MCP Client'",
+    "deploy:force": "pkill -9 -f 'build-production/index.js' || echo 'No existing processes found' && npm run build:production && echo '🔄 Force deployment completed'",
     "precommit": "npm run production:check"
   },
   "keywords": [

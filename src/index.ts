@@ -1135,9 +1135,11 @@ async function main(): Promise<void> {
     }
     
     // Initialize Context Memory System with LLM sampling capability
-    await contextMemory.initialize(server.server, async (messages, options) => {
+    await contextMemory.initialize(server.server, async (messages, options, systemPrompt) => {
       // Convert MCPMessage to MCP SDK format using type-safe conversion
       const sdkMessages = toMCPSDKMessages(messages);
+      
+      // toMCPSDKMessages already filters out system messages
       const convertedMessages = sdkMessages.map(msg => ({
         role: msg.role, // Type-safe: guaranteed to be 'user' | 'assistant'
         content: {
@@ -1152,7 +1154,8 @@ async function main(): Promise<void> {
         maxTokens: 500, // Default value to satisfy required field
         ...(options?.maxTokens !== undefined && { maxTokens: options.maxTokens }),
         ...(options?.temperature !== undefined && { temperature: options.temperature }),
-        ...(options?.stopSequences !== undefined && { stopSequences: options.stopSequences })
+        ...(options?.stopSequences !== undefined && { stopSequences: options.stopSequences }),
+        ...(systemPrompt !== undefined && { systemPrompt })
       };
       
       return await server.server.createMessage(createMessageParams);
