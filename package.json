@@ -113,7 +113,7 @@
     "ts-jest": "^29.4.0",
     "ts-prune": "^0.10.3",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.0",
+    "typescript": "^5.9.2",
     "vitest": "^2.0.0"
   }
 }
